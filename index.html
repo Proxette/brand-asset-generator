@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Brand Asset Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/delaunator@5.0.1/delaunator.min.js"></script>
 <style>
   :root {
     --panel-bg: #0e0e10;
@@ -21,7 +22,6 @@
   }
   body { display: flex; }
 
-  /* ---------- Panel ---------- */
   #panel {
     width: 280px; flex: 0 0 280px; height: 100vh; overflow-y: auto;
     background: var(--panel-bg); border-right: 1px solid var(--panel-line);
@@ -41,18 +41,13 @@
   }
   .section-title:first-child { border-top: 0; padding-top: 0; }
 
-  input[type=range] {
-    -webkit-appearance: none; width: 100%; height: 18px; background: transparent; margin: 0;
-  }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 18px; background: transparent; margin: 0; }
   input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--slider-track); }
   input[type=range]::-moz-range-track { height: 1px; background: var(--slider-track); }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 9px; height: 14px; background: var(--slider-fill);
-    border-radius: 0; margin-top: -7px; cursor: ew-resize;
-  }
-  input[type=range]::-moz-range-thumb {
-    width: 9px; height: 14px; background: var(--slider-fill); border: 0; border-radius: 0; cursor: ew-resize;
-  }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 9px; height: 14px;
+    background: var(--slider-fill); border-radius: 0; margin-top: -7px; cursor: ew-resize; }
+  input[type=range]::-moz-range-thumb { width: 9px; height: 14px; background: var(--slider-fill);
+    border: 0; border-radius: 0; cursor: ew-resize; }
 
   .seg { display: flex; gap: 0; border: 1px solid var(--panel-line); }
   .seg button { flex: 1; background: transparent; color: var(--panel-fg); border: 0; padding: 6px 8px;
@@ -60,39 +55,31 @@
   .seg button.active { background: var(--panel-fg); color: var(--panel-bg); }
 
   .shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-  .shape-grid button {
-    background: transparent; color: var(--panel-fg); border: 1px solid var(--panel-line);
+  .shape-grid button { background: transparent; color: var(--panel-fg); border: 1px solid var(--panel-line);
     padding: 0; cursor: pointer; aspect-ratio: 1;
-    display: flex; align-items: center; justify-content: center;
-  }
+    display: flex; align-items: center; justify-content: center; }
   .shape-grid button svg { width: 20px; height: 20px; opacity: 0.35; }
   .shape-grid button.active { background: var(--panel-line); }
   .shape-grid button.active svg { opacity: 1; }
 
-  button.action {
-    width: 100%; background: transparent; color: var(--panel-fg);
+  button.action { width: 100%; background: transparent; color: var(--panel-fg);
     border: 1px solid var(--panel-line); padding: 8px 10px; font: inherit;
-    text-transform: uppercase; letter-spacing: .1em; cursor: pointer; margin-top: 4px;
-  }
+    text-transform: uppercase; letter-spacing: .1em; cursor: pointer; margin-top: 4px; }
   button.action:hover { background: var(--panel-line); }
   button.action.primary { background: var(--panel-fg); color: var(--panel-bg); }
   button.action.primary:hover { background: #fff; }
 
-  input[type=text] {
-    width: 100%; background: transparent; color: var(--panel-fg); border: 1px solid var(--panel-line);
-    padding: 6px 8px; font: inherit;
-  }
+  input[type=text] { width: 100%; background: transparent; color: var(--panel-fg);
+    border: 1px solid var(--panel-line); padding: 6px 8px; font: inherit; }
   input[type=file] { display: none; }
 
-  /* ---------- Stage ---------- */
   #stage { flex: 1; display: flex; align-items: center; justify-content: center;
     position: relative; overflow: hidden; }
   #canvas { background: #000; max-width: calc(100% - 48px); max-height: calc(100% - 48px);
     box-shadow: 0 0 0 1px #1a1a1a, 0 30px 80px rgba(0,0,0,.6); }
   #dropHint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     pointer-events: none; color: var(--panel-muted); text-transform: uppercase; letter-spacing: .2em;
-    font-size: 11px;
-  }
+    font-size: 11px; }
   #dropHint.hidden { display: none; }
   #stage.dragover::after { content: ""; position: absolute; inset: 24px;
     border: 1px dashed var(--accent); pointer-events: none; }
@@ -117,7 +104,7 @@
   <div class="row">
     <button class="action" id="uploadBtn">Upload Image</button>
     <input type="file" id="fileInput" accept="image/*">
-    <div class="hint">canvas adopts the image aspect ratio</div>
+    <div class="hint">canvas adopts image aspect · quadtree follows detail</div>
   </div>
 
   <div class="section-title">Frame</div>
@@ -149,7 +136,6 @@
   <div class="row" data-slider="threshold" data-min="0" data-max="100" data-step="1" data-val="40">
     <div class="label-row"><span class="label">Threshold</span><span class="value">40</span></div>
     <input type="range">
-    <div class="hint">image desaturation / contrast</div>
   </div>
   <div class="row" data-slider="pixelSize" data-min="4" data-max="40" data-step="1" data-val="14">
     <div class="label-row"><span class="label">Pixel Size</span><span class="value">14</span></div>
@@ -164,82 +150,79 @@
     <input type="range">
   </div>
 
-  <div class="section-title">Shapes</div>
+  <div class="section-title">Shapes · Quadtree</div>
 
   <div class="row">
     <div class="shape-grid" id="shapeGrid">
-      <button data-val="circle" class="active" title="Circle">
-        <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-      </button>
       <button data-val="square" class="active" title="Square">
         <svg viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+      <button data-val="circle" title="Circle">
+        <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
       </button>
       <button data-val="triangle" title="Triangle">
         <svg viewBox="0 0 20 20"><polygon points="10,3 17,17 3,17" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
       </button>
-      <button data-val="circle-dashed" title="Circle · broken">
-        <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/></svg>
-      </button>
       <button data-val="square-dashed" title="Square · broken">
         <svg viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/></svg>
+      </button>
+      <button data-val="circle-dashed" title="Circle · broken">
+        <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/></svg>
       </button>
       <button data-val="triangle-dashed" title="Triangle · broken">
         <svg viewBox="0 0 20 20"><polygon points="10,3 17,17 3,17" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/></svg>
       </button>
     </div>
-    <div class="hint">toggle shape types — placement biased to image detail</div>
+    <div class="hint">quadtree subdivides where image has detail</div>
   </div>
 
-  <div class="row" data-slider="shapeCount" data-min="0" data-max="500" data-step="1" data-val="220">
-    <div class="label-row"><span class="label">Shape Count</span><span class="value">220</span></div>
+  <div class="row" data-slider="gridStep" data-min="2" data-max="32" data-step="1" data-val="8">
+    <div class="label-row"><span class="label">Grid Step</span><span class="value">8</span></div>
+    <input type="range">
+    <div class="hint">base unit · all sizes snap to this multiple</div>
+  </div>
+  <div class="row" data-slider="minLeafSize" data-min="8" data-max="96" data-step="1" data-val="20">
+    <div class="label-row"><span class="label">Min Leaf</span><span class="value">20</span></div>
+    <input type="range">
+    <div class="hint">smallest quadrant in high-detail zones</div>
+  </div>
+  <div class="row" data-slider="maxLeafSize" data-min="32" data-max="400" data-step="1" data-val="160">
+    <div class="label-row"><span class="label">Max Leaf</span><span class="value">160</span></div>
+    <input type="range">
+    <div class="hint">largest quadrant in flat zones</div>
+  </div>
+  <div class="row" data-slider="energyThreshold" data-min="1" data-max="80" data-step="1" data-val="18">
+    <div class="label-row"><span class="label">Energy Threshold</span><span class="value">18</span></div>
+    <input type="range">
+    <div class="hint">edge density needed to keep subdividing</div>
+  </div>
+  <div class="row" data-slider="stroke" data-min="0.3" data-max="3" data-step="0.1" data-val="0.8">
+    <div class="label-row"><span class="label">Stroke</span><span class="value">0.8</span></div>
     <input type="range">
   </div>
-  <div class="row" data-slider="saliencyBias" data-min="0" data-max="100" data-step="1" data-val="75">
-    <div class="label-row"><span class="label">Detail Bias</span><span class="value">75</span></div>
+  <div class="row" data-slider="labelDensity" data-min="0" data-max="100" data-step="1" data-val="35">
+    <div class="label-row"><span class="label">Label Density</span><span class="value">35</span></div>
     <input type="range">
-    <div class="hint">0 = uniform · 100 = strictly follow image edges</div>
-  </div>
-  <div class="row" data-slider="minRadius" data-min="2" data-max="60" data-step="1" data-val="6">
-    <div class="label-row"><span class="label">Min Radius</span><span class="value">6</span></div>
-    <input type="range">
-  </div>
-  <div class="row" data-slider="maxRadius" data-min="4" data-max="120" data-step="1" data-val="35">
-    <div class="label-row"><span class="label">Max Radius</span><span class="value">35</span></div>
-    <input type="range">
-  </div>
-  <div class="row" data-slider="minDistance" data-min="0" data-max="120" data-step="1" data-val="28">
-    <div class="label-row"><span class="label">Min Distance</span><span class="value">28</span></div>
-    <input type="range">
-  </div>
-  <div class="row" data-slider="stroke" data-min="0.3" data-max="3" data-step="0.1" data-val="1.0">
-    <div class="label-row"><span class="label">Stroke</span><span class="value">1.0</span></div>
-    <input type="range">
-  </div>
-  <div class="row" data-slider="labelDensity" data-min="0" data-max="100" data-step="1" data-val="55">
-    <div class="label-row"><span class="label">Label Density</span><span class="value">55</span></div>
-    <input type="range">
+    <div class="hint">% of quadrants showing coordinate labels</div>
   </div>
 
-  <div class="section-title">Connections</div>
+  <div class="section-title">Connections · Delaunay</div>
 
-  <div class="row" data-slider="connectionDensity" data-min="0" data-max="100" data-step="1" data-val="35">
-    <div class="label-row"><span class="label">Density</span><span class="value">35</span></div>
+  <div class="row" data-slider="connectionDensity" data-min="0" data-max="100" data-step="1" data-val="100">
+    <div class="label-row"><span class="label">Edge Density</span><span class="value">100</span></div>
     <input type="range">
-    <div class="hint">probability each node spawns connections</div>
+    <div class="hint">% of triangulated edges to draw</div>
   </div>
-  <div class="row" data-slider="connectionMaxDistance" data-min="40" data-max="600" data-step="1" data-val="180">
-    <div class="label-row"><span class="label">Max Distance</span><span class="value">180</span></div>
+  <div class="row" data-slider="connectionMaxDistance" data-min="20" data-max="600" data-step="1" data-val="140">
+    <div class="label-row"><span class="label">Max Edge</span><span class="value">140</span></div>
     <input type="range">
-  </div>
-  <div class="row" data-slider="connectionNeighbors" data-min="1" data-max="4" data-step="1" data-val="2">
-    <div class="label-row"><span class="label">Neighbors</span><span class="value">2</span></div>
-    <input type="range">
+    <div class="hint">filter out long stretching edges</div>
   </div>
   <div class="row">
     <div class="seg" id="connStyleSeg">
-      <button data-val="solid">Solid</button>
+      <button data-val="solid" class="active">Solid</button>
       <button data-val="dashed">Dashed</button>
-      <button data-val="mixed" class="active">Mixed</button>
+      <button data-val="mixed">Mixed</button>
     </div>
   </div>
 
@@ -248,7 +231,6 @@
   <div class="row" data-slider="focusRings" data-min="0" data-max="8" data-step="1" data-val="3">
     <div class="label-row"><span class="label">Focus Rings</span><span class="value">3</span></div>
     <input type="range">
-    <div class="hint">concentric rings on highest-detail point</div>
   </div>
   <div class="row" data-slider="focusSpacing" data-min="20" data-max="200" data-step="1" data-val="60">
     <div class="label-row"><span class="label">Ring Spacing</span><span class="value">60</span></div>
@@ -280,12 +262,8 @@
     <input type="range">
   </div>
 
-  <div class="row">
-    <button class="action primary" id="randomizeBtn">Randomize All</button>
-  </div>
-  <div class="row">
-    <button class="action" id="exportBtn">Export PNG</button>
-  </div>
+  <div class="row"><button class="action primary" id="randomizeBtn">Randomize All</button></div>
+  <div class="row"><button class="action" id="exportBtn">Export PNG</button></div>
 
 </aside>
 
@@ -298,12 +276,12 @@
 <script>
 "use strict";
 
-const ALL_SHAPES = ["circle","square","triangle","circle-dashed","square-dashed","triangle-dashed"];
+const ALL_SHAPES = ["square","circle","triangle","square-dashed","circle-dashed","triangle-dashed"];
 
 const state = {
   theme: "dark",
-  shapes: new Set(["circle", "square"]),
-  connectionStyle: "mixed",
+  shapes: new Set(["square"]),
+  connectionStyle: "solid",
   image: null,
   frameTop: "Visual Anatomy",
   frameBot: "Specimen 0418",
@@ -314,16 +292,14 @@ const state = {
   pixelSize: 14,
   pixelZones: 2,
   overlayOpacity: 100,
-  shapeCount: 220,
-  saliencyBias: 75,
-  minRadius: 6,
-  maxRadius: 35,
-  minDistance: 28,
-  stroke: 1.0,
-  labelDensity: 55,
-  connectionDensity: 35,
-  connectionMaxDistance: 180,
-  connectionNeighbors: 2,
+  gridStep: 8,
+  minLeafSize: 20,
+  maxLeafSize: 160,
+  energyThreshold: 18,
+  stroke: 0.8,
+  labelDensity: 35,
+  connectionDensity: 100,
+  connectionMaxDistance: 140,
   focusRings: 3,
   focusSpacing: 60,
   chainCount: 10,
@@ -354,11 +330,10 @@ function rint(min, max) { return Math.floor(rrange(min, max + 1)); }
 function rchoice(arr) { return arr[Math.floor(rand() * arr.length)]; }
 
 /* ---------- Saliency map (image-content awareness) ---------- */
-let saliencyMap = null; // { w, h, data: Float32Array }
+let saliencyMap = null;
 
 function computeSaliency(img) {
-  const targetW = 140;
-  const sw = targetW;
+  const sw = 200;
   const sh = Math.max(8, Math.round(sw * img.height / img.width));
   const off = document.createElement("canvas");
   off.width = sw; off.height = sh;
@@ -367,12 +342,9 @@ function computeSaliency(img) {
   let data;
   try { data = octx.getImageData(0, 0, sw, sh).data; }
   catch (e) { saliencyMap = null; return; }
-
   const lum = new Float32Array(sw * sh);
-  for (let i = 0, n = sw * sh; i < n; i++) {
+  for (let i = 0, n = sw * sh; i < n; i++)
     lum[i] = 0.2126 * data[i*4] + 0.7152 * data[i*4+1] + 0.0722 * data[i*4+2];
-  }
-  // gradient magnitude (Sobel-like via central differences)
   const grad = new Float32Array(sw * sh);
   let gmax = 0;
   for (let y = 1; y < sh - 1; y++) {
@@ -385,39 +357,96 @@ function computeSaliency(img) {
       if (m > gmax) gmax = m;
     }
   }
-  // box-blur 3x3 so single-pixel edges don't dominate
+  // box-blur 3x3
   const blur = new Float32Array(sw * sh);
   for (let y = 0; y < sh; y++) {
     for (let x = 0; x < sw; x++) {
       let s = 0, c = 0;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const xx = x + dx, yy = y + dy;
-          if (xx < 0 || yy < 0 || xx >= sw || yy >= sh) continue;
-          s += grad[yy * sw + xx]; c++;
-        }
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx < 0 || yy < 0 || xx >= sw || yy >= sh) continue;
+        s += grad[yy * sw + xx]; c++;
       }
       blur[y * sw + x] = s / c;
     }
   }
-  // normalize 0..1
   const out = new Float32Array(sw * sh);
   const norm = gmax || 1;
   for (let i = 0; i < blur.length; i++) out[i] = blur[i] / norm;
   saliencyMap = { w: sw, h: sh, data: out };
 }
 
-// returns probability factor in [0..1] mixed with bias slider
-function saliencyAt(fx, fy) {
-  if (!saliencyMap) return 1;
-  const sx = Math.max(0, Math.min(saliencyMap.w - 1, Math.floor(fx * saliencyMap.w)));
-  const sy = Math.max(0, Math.min(saliencyMap.h - 1, Math.floor(fy * saliencyMap.h)));
-  const raw = saliencyMap.data[sy * saliencyMap.w + sx]; // 0..1
-  // bias 0 → completely uniform (1), 100 → raw with strong contrast
-  const b = state.saliencyBias / 100;
-  // raise raw to a power based on bias for sharper falloff at high bias
-  const shaped = Math.pow(raw, 0.5 + b * 2.5);
-  return (1 - b) + b * shaped;
+/* energy of a canvas-space rect — mean saliency inside */
+function rectEnergy(x, y, size, W, H) {
+  if (!saliencyMap) return 0;
+  const sw = saliencyMap.w, sh = saliencyMap.h;
+  const sx0 = Math.max(0, Math.floor(x / W * sw));
+  const sy0 = Math.max(0, Math.floor(y / H * sh));
+  const sx1 = Math.min(sw, Math.ceil((x + size) / W * sw));
+  const sy1 = Math.min(sh, Math.ceil((y + size) / H * sh));
+  if (sx1 <= sx0 || sy1 <= sy0) return 0;
+  let sum = 0, count = 0;
+  for (let yy = sy0; yy < sy1; yy++)
+    for (let xx = sx0; xx < sx1; xx++) {
+      sum += saliencyMap.data[yy * sw + xx];
+      count++;
+    }
+  return count > 0 ? sum / count : 0;
+}
+
+/* ---------- Quadtree ---------- */
+function buildQuadtree(W, H) {
+  const gridStep = state.gridStep;
+  const minLeaf = Math.max(gridStep, state.minLeafSize);
+  const maxLeaf = Math.max(minLeaf, state.maxLeafSize);
+  const threshold = state.energyThreshold / 100;
+  // start with the smallest power-of-2 multiple of gridStep that covers the canvas
+  let rootSize = gridStep;
+  while (rootSize < Math.max(W, H)) rootSize *= 2;
+
+  const leaves = [];
+  function recurse(x, y, size) {
+    if (x >= W || y >= H) return;
+    const half = size / 2;
+    const energy = rectEnergy(x, y, size, W, H);
+    const mustSubdivide = size > maxLeaf;
+    const wantSubdivide = size > minLeaf && energy > threshold;
+    if ((mustSubdivide || wantSubdivide) && half >= gridStep) {
+      recurse(x,        y,        half);
+      recurse(x + half, y,        half);
+      recurse(x,        y + half, half);
+      recurse(x + half, y + half, half);
+    } else {
+      leaves.push({ x, y, size });
+    }
+  }
+  recurse(0, 0, rootSize);
+  return leaves;
+}
+
+/* ---------- Delaunay triangulation ---------- */
+function triangulateLeaves(leaves) {
+  if (typeof Delaunator === "undefined" || leaves.length < 3) return [];
+  const pts = new Float64Array(leaves.length * 2);
+  for (let i = 0; i < leaves.length; i++) {
+    pts[i*2]   = leaves[i].x + leaves[i].size / 2;
+    pts[i*2+1] = leaves[i].y + leaves[i].size / 2;
+  }
+  const d = new Delaunator(pts);
+  const tris = d.triangles;
+  const seen = new Set();
+  const edges = [];
+  for (let i = 0; i < tris.length; i += 3) {
+    const a = tris[i], b = tris[i+1], c = tris[i+2];
+    const pairs = [[a,b],[b,c],[c,a]];
+    for (const [p, q] of pairs) {
+      const key = p < q ? `${p}-${q}` : `${q}-${p}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      edges.push([p, q]);
+    }
+  }
+  return edges;
 }
 
 /* ---------- Canvas sizing follows image ---------- */
@@ -503,7 +532,6 @@ function bindShapeGrid() {
 
 document.getElementById("frameTop").addEventListener("input", e => { state.frameTop = e.target.value; render(); });
 document.getElementById("frameBot").addEventListener("input", e => { state.frameBot = e.target.value; render(); });
-
 document.getElementById("uploadBtn").addEventListener("click", () => document.getElementById("fileInput").click());
 document.getElementById("fileInput").addEventListener("change", e => {
   const f = e.target.files[0]; if (f) loadFile(f);
@@ -514,28 +542,24 @@ document.getElementById("randomizeBtn").addEventListener("click", () => {
   setSlider("threshold", Math.floor(Math.random() * 60) + 20);
   setSlider("pixelSize", Math.floor(Math.random() * 24) + 6);
   setSlider("pixelZones", Math.floor(Math.random() * 4));
-  setSlider("shapeCount", Math.floor(Math.random() * 300) + 80);
-  setSlider("saliencyBias", Math.floor(Math.random() * 80) + 20);
-  setSlider("minRadius", Math.floor(Math.random() * 10) + 3);
-  setSlider("maxRadius", Math.floor(Math.random() * 60) + 20);
-  setSlider("minDistance", Math.floor(Math.random() * 50) + 10);
-  setSlider("connectionDensity", Math.floor(Math.random() * 80) + 10);
-  setSlider("connectionMaxDistance", Math.floor(Math.random() * 300) + 80);
-  setSlider("connectionNeighbors", Math.floor(Math.random() * 3) + 1);
+  setSlider("gridStep", [4, 8, 8, 8, 16][Math.floor(Math.random() * 5)]);
+  setSlider("minLeafSize", Math.floor(Math.random() * 24) + 12);
+  setSlider("maxLeafSize", Math.floor(Math.random() * 200) + 80);
+  setSlider("energyThreshold", Math.floor(Math.random() * 30) + 8);
+  setSlider("labelDensity", Math.floor(Math.random() * 60) + 15);
+  setSlider("connectionDensity", Math.floor(Math.random() * 100));
+  setSlider("connectionMaxDistance", Math.floor(Math.random() * 200) + 60);
   setSlider("focusRings", Math.floor(Math.random() * 6));
   setSlider("focusSpacing", Math.floor(Math.random() * 100) + 40);
   setSlider("chainCount", Math.floor(Math.random() * 18));
   setSlider("chainAngle", Math.floor(Math.random() * 360));
   setSlider("chainBaseRadius", Math.floor(Math.random() * 120) + 30);
   setSlider("chainSizeRatio", (Math.random() * 0.4 + 0.65).toFixed(2));
-  setSlider("labelDensity", Math.floor(Math.random() * 70) + 30);
-  // shape vocabulary: random non-empty subset
-  const subset = ALL_SHAPES.filter(() => Math.random() < 0.5);
-  if (subset.length === 0) subset.push(ALL_SHAPES[Math.floor(Math.random() * ALL_SHAPES.length)]);
+  const subset = ALL_SHAPES.filter(() => Math.random() < 0.4);
+  if (subset.length === 0) subset.push("square");
   state.shapes = new Set(subset);
   document.querySelectorAll("#shapeGrid button").forEach(b =>
     b.classList.toggle("active", state.shapes.has(b.dataset.val)));
-  // connection style
   const styles = ["solid", "dashed", "mixed"];
   state.connectionStyle = styles[Math.floor(Math.random() * styles.length)];
   document.querySelectorAll("#connStyleSeg button").forEach(b =>
@@ -575,29 +599,14 @@ stage.addEventListener("drop", e => {
   const f = e.dataTransfer.files[0]; if (f && f.type.startsWith("image/")) loadFile(f);
 });
 
-/* ---------- Helpers ---------- */
+/* ---------- Colors ---------- */
 function colors() {
   if (state.theme === "bright")
-    return { bg: "#efeee9", fg: "#0a0a0a", mute: "rgba(0,0,0,.5)", soft: "rgba(0,0,0,.18)" };
-  return { bg: "#0a0a0a", fg: "#e6e6e6", mute: "rgba(255,255,255,.5)", soft: "rgba(255,255,255,.18)" };
-}
-function randLabel() {
-  const kinds = [
-    () => `X = ${(rand()).toFixed(3)}`,
-    () => `Y = ${(rand()).toFixed(3)}`,
-    () => `T = ${(rand() * 2).toFixed(3)}`,
-    () => `Ø ${rint(10, 999)}`,
-    () => `${rint(0, 359)}°`,
-    () => `${(rand() * 9.999).toFixed(3)}`,
-    () => `δ ${(rand()).toFixed(2)}`,
-    () => `R/${rint(2, 99)}`,
-    () => `▢ ${rint(100, 999)}`,
-    () => `+${rint(1, 99)}.${rint(10, 99)}`,
-  ];
-  return rchoice(kinds)();
+    return { bg: "#efeee9", fg: "#0a0a0a", mute: "rgba(0,0,0,.45)", soft: "rgba(0,0,0,.15)" };
+  return { bg: "#0a0a0a", fg: "#e6e6e6", mute: "rgba(255,255,255,.45)", soft: "rgba(255,255,255,.15)" };
 }
 
-/* ---------- Image layer (canvas now matches image AR) ---------- */
+/* ---------- Image layer ---------- */
 function drawImageLayer(W, H) {
   if (!state.image) {
     const g = ctx.createLinearGradient(0, 0, W, H);
@@ -613,30 +622,25 @@ function drawImageLayer(W, H) {
   ctx.globalAlpha = state.overlayOpacity / 100;
   ctx.drawImage(img, 0, 0, W, H);
   ctx.restore();
-
-  // subtle tint
   ctx.save();
   ctx.globalCompositeOperation = "multiply";
   ctx.fillStyle = state.theme === "bright" ? "rgba(220,215,200,0.25)" : "rgba(20,18,16,0.35)";
   ctx.fillRect(0, 0, W, H);
   ctx.restore();
-
-  if (state.pixelZones > 0 && state.pixelSize > 1) {
+  if (state.pixelZones > 0 && state.pixelSize > 1)
     buildPixelZones(W, H).forEach(z => drawPixelZone(img, W, H, z));
-  }
 }
 
 function buildPixelZones(W, H) {
   const out = [];
-  const candPerZone = 60;
   for (let i = 0; i < state.pixelZones; i++) {
     let best = null, bestSal = -1;
-    for (let t = 0; t < candPerZone; t++) {
+    for (let t = 0; t < 60; t++) {
       const w = rrange(W * 0.14, W * 0.36);
       const h = rrange(H * 0.12, H * 0.30);
       const x = rrange(W * 0.05, W - w - W * 0.05);
       const y = rrange(H * 0.05, H - h - H * 0.05);
-      const sal = saliencyAt((x + w/2) / W, (y + h/2) / H);
+      const sal = rectEnergy(x, y, Math.min(w, h), W, H);
       if (sal > bestSal) { bestSal = sal; best = { x, y, w, h }; }
     }
     if (best) out.push(best);
@@ -663,14 +667,12 @@ function drawPixelZone(img, W, H, z) {
   ctx.filter = `saturate(${1 - t * 0.8}) contrast(${1 + t * 0.5})`;
   ctx.drawImage(tmp, 0, 0, cols, rows, z.x, z.y, cols * px, rows * px);
   ctx.restore();
-
   ctx.save();
   ctx.strokeStyle = colors().fg;
   ctx.lineWidth = state.lineWeight;
   ctx.setLineDash([4, 3]);
   ctx.strokeRect(z.x + 0.5, z.y + 0.5, cols * px, rows * px);
   ctx.restore();
-
   ctx.save();
   ctx.fillStyle = colors().fg;
   ctx.font = "9px ui-monospace, monospace";
@@ -687,7 +689,6 @@ function drawFrame(W, H) {
   ctx.strokeStyle = c.fg;
   ctx.lineWidth = state.lineWeight;
   ctx.strokeRect(inset + 0.5, inset + 0.5, W - inset * 2, H - inset * 2);
-
   const armLen = 18;
   function corner(x, y, sx, sy) {
     ctx.beginPath();
@@ -698,7 +699,6 @@ function drawFrame(W, H) {
   corner(W - inset, inset, -1, 1);
   corner(inset, H - inset, 1, -1);
   corner(W - inset, H - inset, -1, -1);
-
   const td = state.tickDensity;
   ctx.strokeStyle = c.soft;
   for (let x = inset + td; x < W - inset; x += td) {
@@ -710,7 +710,6 @@ function drawFrame(W, H) {
     ctx.beginPath(); ctx.moveTo(W - inset, y + 0.5); ctx.lineTo(W - inset - 6, y + 0.5); ctx.stroke();
   }
   ctx.restore();
-
   ctx.save();
   ctx.fillStyle = c.fg;
   ctx.font = "10px ui-monospace, monospace";
@@ -718,17 +717,14 @@ function drawFrame(W, H) {
   if (state.frameTop) {
     ctx.fillText(state.frameTop, inset, inset - 8);
     const meta = `§ ${W}×${H}`;
-    const mw = ctx.measureText(meta).width;
-    ctx.fillText(meta, W - inset - mw, inset - 8);
+    ctx.fillText(meta, W - inset - ctx.measureText(meta).width, inset - 8);
   }
   if (state.frameBot) {
     ctx.fillText(state.frameBot, inset, H - inset + 16);
     const meta = `SEED ${state.seed}`;
-    const mw = ctx.measureText(meta).width;
-    ctx.fillText(meta, W - inset - mw, H - inset + 16);
+    ctx.fillText(meta, W - inset - ctx.measureText(meta).width, H - inset + 16);
   }
   ctx.restore();
-
   ctx.save();
   ctx.strokeStyle = c.soft;
   ctx.lineWidth = state.lineWeight * 0.7;
@@ -738,185 +734,16 @@ function drawFrame(W, H) {
   ctx.restore();
 }
 
-/* ---------- Coordinate grid ---------- */
-function drawGrid(W, H) {
-  const c = colors();
-  const inset = state.crosshairInset;
-  ctx.save();
-  ctx.strokeStyle = c.soft;
-  ctx.lineWidth = state.lineWeight * 0.5;
-  ctx.setLineDash([1, 5]);
-  const step = Math.max(40, state.tickDensity * 2);
-  for (let x = inset + step; x < W - inset; x += step) {
-    ctx.beginPath(); ctx.moveTo(x + 0.5, inset); ctx.lineTo(x + 0.5, H - inset); ctx.stroke();
-  }
-  for (let y = inset + step; y < H - inset; y += step) {
-    ctx.beginPath(); ctx.moveTo(inset, y + 0.5); ctx.lineTo(W - inset, y + 0.5); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-/* ---------- Shape markers (saliency-biased) ---------- */
-function placeShapes(W, H) {
-  if (state.shapeCount <= 0 || state.shapes.size === 0) return [];
-  const enabled = Array.from(state.shapes);
-  const inset = state.crosshairInset + 12;
-  const placed = [];
-  const tries = state.shapeCount * 80;
-  for (let i = 0; i < tries && placed.length < state.shapeCount; i++) {
-    const r = rrange(state.minRadius, Math.max(state.minRadius + 1, state.maxRadius));
-    const x = rrange(inset + r, W - inset - r);
-    const y = rrange(inset + r, H - inset - r);
-    const sal = saliencyAt(x / W, y / H);
-    if (rand() > sal) continue;
-    let ok = true;
-    for (const p of placed) {
-      if (Math.hypot(p.x - x, p.y - y) < state.minDistance + (p.r + r) * 0.3) { ok = false; break; }
-    }
-    if (!ok) continue;
-    const kind = enabled[Math.floor(rand() * enabled.length)];
-    const angle = rand() * Math.PI * 2;
-    placed.push({
-      x, y, r, kind, angle,
-      label: rand() * 100 < state.labelDensity ? randLabel() : null,
-    });
-  }
-  return placed;
-}
-
-function drawMarker(p, c) {
-  // small crosshair through center
-  const tk = Math.min(p.r * 1.3, p.r + 6);
-  ctx.save();
-  ctx.strokeStyle = c.mute;
-  ctx.lineWidth = Math.max(0.5, state.stroke * 0.7);
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(p.x - tk, p.y); ctx.lineTo(p.x + tk, p.y);
-  ctx.moveTo(p.x, p.y - tk); ctx.lineTo(p.x, p.y + tk);
-  ctx.stroke();
-  ctx.restore();
-
-  // center dot
-  ctx.save();
-  ctx.fillStyle = c.fg;
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, Math.max(0.6, state.stroke * 0.7), 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // shape outline
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(p.angle);
-  ctx.strokeStyle = c.fg;
-  ctx.lineWidth = state.stroke;
-  const dashed = p.kind.endsWith("-dashed");
-  if (dashed) {
-    const d = Math.max(2, p.r * 0.28);
-    const g = Math.max(2, p.r * 0.22);
-    ctx.setLineDash([d, g]);
-  } else {
-    ctx.setLineDash([]);
-  }
-  const base = p.kind.replace("-dashed", "");
-  ctx.beginPath();
-  if (base === "circle") {
-    ctx.arc(0, 0, p.r, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if (base === "square") {
-    ctx.strokeRect(-p.r, -p.r, p.r * 2, p.r * 2);
-  } else if (base === "triangle") {
-    const a0 = -Math.PI / 2;
-    ctx.moveTo(p.r * Math.cos(a0), p.r * Math.sin(a0));
-    ctx.lineTo(p.r * Math.cos(a0 + 2 * Math.PI / 3), p.r * Math.sin(a0 + 2 * Math.PI / 3));
-    ctx.lineTo(p.r * Math.cos(a0 + 4 * Math.PI / 3), p.r * Math.sin(a0 + 4 * Math.PI / 3));
-    ctx.closePath();
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  if (p.label) {
-    ctx.save();
-    ctx.setLineDash([]);
-    ctx.fillStyle = c.fg;
-    ctx.font = "9px ui-monospace, monospace";
-    ctx.textBaseline = "middle";
-    ctx.fillText(p.label, p.x + p.r + 4, p.y);
-    ctx.restore();
-  }
-}
-
-function drawShapes(W, H, placed) {
-  if (placed.length === 0) return;
-  const c = colors();
-  placed.forEach(p => drawMarker(p, c));
-}
-
-/* ---------- Connections (lines between nodes) ---------- */
-function buildConnections(placed) {
-  if (placed.length < 2 || state.connectionDensity <= 0) return [];
-  const conns = [];
-  const seen = new Set();
-  const maxDist = state.connectionMaxDistance;
-  const stylePool = state.connectionStyle === "mixed"
-    ? ["solid", "dashed"]
-    : [state.connectionStyle];
-  for (let i = 0; i < placed.length; i++) {
-    if (rand() * 100 > state.connectionDensity) continue;
-    const p = placed[i];
-    const cands = [];
-    for (let j = 0; j < placed.length; j++) {
-      if (i === j) continue;
-      const q = placed[j];
-      const d = Math.hypot(p.x - q.x, p.y - q.y);
-      if (d > 0 && d <= maxDist) cands.push({ j, d });
-    }
-    cands.sort((a, b) => a.d - b.d);
-    const k = Math.min(cands.length, 1 + Math.floor(rand() * state.connectionNeighbors));
-    for (let ci = 0; ci < k; ci++) {
-      const j = cands[ci].j;
-      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      conns.push({ a: i, b: j, style: rchoice(stylePool) });
-    }
-  }
-  return conns;
-}
-
-function drawConnections(conns, placed, c) {
-  if (conns.length === 0) return;
-  ctx.save();
-  ctx.strokeStyle = c.mute;
-  ctx.lineWidth = Math.max(0.4, state.stroke * 0.65);
-  conns.forEach(cn => {
-    const p = placed[cn.a], q = placed[cn.b];
-    const dx = q.x - p.x, dy = q.y - p.y;
-    const d = Math.hypot(dx, dy);
-    if (d < 1) return;
-    const ux = dx / d, uy = dy / d;
-    const offA = p.r + 3, offB = q.r + 3;
-    if (cn.style === "dashed") ctx.setLineDash([4, 3]); else ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(p.x + ux * offA, p.y + uy * offA);
-    ctx.lineTo(q.x - ux * offB, q.y - uy * offB);
-    ctx.stroke();
-  });
-  ctx.restore();
-}
-
-/* ---------- Focus rings on highest-detail point ---------- */
+/* ---------- Focus rings ---------- */
 function focalPoint(W, H) {
   if (!saliencyMap) return { x: W / 2, y: H / 2 };
   let bx = 0, by = 0, bestSal = -1;
   const sw = saliencyMap.w, sh = saliencyMap.h;
-  for (let y = 2; y < sh - 2; y++) {
+  for (let y = 2; y < sh - 2; y++)
     for (let x = 2; x < sw - 2; x++) {
       const s = saliencyMap.data[y * sw + x];
       if (s > bestSal) { bestSal = s; bx = x; by = y; }
     }
-  }
   return { x: (bx + 0.5) / sw * W, y: (by + 0.5) / sh * H };
 }
 
@@ -930,9 +757,7 @@ function drawFocusRings(W, H) {
   for (let i = 0; i < state.focusRings; i++) {
     const r = state.focusSpacing * (i + 1);
     ctx.setLineDash(i === state.focusRings - 1 ? [] : [3, 4]);
-    ctx.beginPath();
-    ctx.arc(fp.x, fp.y, r, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(fp.x, fp.y, r, 0, Math.PI * 2); ctx.stroke();
   }
   ctx.setLineDash([]);
   ctx.lineWidth = state.stroke;
@@ -942,16 +767,14 @@ function drawFocusRings(W, H) {
   ctx.moveTo(fp.x, fp.y - arm); ctx.lineTo(fp.x, fp.y + arm);
   ctx.stroke();
   ctx.fillStyle = c.fg;
-  ctx.beginPath();
-  ctx.arc(fp.x, fp.y, Math.max(1, state.stroke), 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(fp.x, fp.y, Math.max(1, state.stroke), 0, Math.PI * 2); ctx.fill();
   ctx.font = "9px ui-monospace, monospace";
   ctx.textBaseline = "top";
-  ctx.fillText(`FOCAL  X${(fp.x / W).toFixed(3)}  Y${(fp.y / H).toFixed(3)}`, fp.x + arm + 4, fp.y + 4);
+  ctx.fillText(`FOCAL  ${Math.round(fp.x)},${Math.round(fp.y)}`, fp.x + arm + 4, fp.y + 4);
   ctx.restore();
 }
 
-/* ---------- Circle chain (origin biased to detail) ---------- */
+/* ---------- Circle chain ---------- */
 function drawChain(W, H) {
   if (state.chainCount <= 0) return;
   const c = colors();
@@ -960,7 +783,7 @@ function drawChain(W, H) {
   for (let i = 0; i < 40; i++) {
     const cx = rrange(inset, W - inset);
     const cy = rrange(inset, H - inset);
-    const s = saliencyAt(cx / W, cy / H);
+    const s = rectEnergy(cx - 20, cy - 20, 40, W, H);
     if (s > bestSal) { bestSal = s; ox = cx; oy = cy; }
   }
   const angle = (state.chainAngle * Math.PI) / 180;
@@ -973,7 +796,9 @@ function drawChain(W, H) {
   ctx.fillStyle = c.fg;
   ctx.textBaseline = "middle";
   for (let i = 0; i < state.chainCount; i++) {
+    ctx.setLineDash(i % 3 === 1 ? [3, 3] : []);
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
     const tk = Math.min(r * 0.9, r + 4);
     ctx.save();
     ctx.strokeStyle = c.mute;
@@ -983,16 +808,115 @@ function drawChain(W, H) {
     ctx.stroke();
     ctx.restore();
     ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, state.stroke * 0.8), 0, Math.PI * 2); ctx.fill();
-    ctx.fillText(`R${String(i).padStart(2, "0")} ${r.toFixed(1)}`, x + r + 4, y);
-
+    ctx.fillText(`${i + 1} → ${Math.round(r * 12)} − ${Math.round(r * 8)}`, x + r + 6, y);
     const next = r * state.chainSizeRatio;
     const step = r + next + 4;
     x += Math.cos(angle) * step;
     y += Math.sin(angle) * step;
     r = next;
-    if (r < 2 || x < -50 || x > W + 50 || y < -50 || y > H + 50) break;
+    if (r < 2 || x < -100 || x > W + 100 || y < -100 || y > H + 100) break;
   }
   ctx.restore();
+}
+
+/* ---------- Quadtree shapes + connections ---------- */
+function drawConnections(edges, leaves) {
+  if (edges.length === 0) return;
+  const c = colors();
+  const maxLen = state.connectionMaxDistance;
+  const stylePool = state.connectionStyle === "mixed" ? ["solid", "dashed"] : [state.connectionStyle];
+  ctx.save();
+  ctx.strokeStyle = c.mute;
+  ctx.lineWidth = Math.max(0.3, state.stroke * 0.55);
+  for (let i = 0; i < edges.length; i++) {
+    if (rand() * 100 > state.connectionDensity) continue;
+    const [a, b] = edges[i];
+    const la = leaves[a], lb = leaves[b];
+    const x1 = la.x + la.size / 2, y1 = la.y + la.size / 2;
+    const x2 = lb.x + lb.size / 2, y2 = lb.y + lb.size / 2;
+    if (Math.hypot(x2 - x1, y2 - y1) > maxLen) continue;
+    const style = stylePool[Math.floor(rand() * stylePool.length)];
+    if (style === "dashed") ctx.setLineDash([4, 3]); else ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawLeafShape(leaf, kind, c) {
+  const cx = leaf.x + leaf.size / 2;
+  const cy = leaf.y + leaf.size / 2;
+  const pad = 1;
+  const r = (leaf.size - pad * 2) / 2;
+  ctx.save();
+  ctx.strokeStyle = c.fg;
+  ctx.lineWidth = state.stroke;
+  const dashed = kind.endsWith("-dashed");
+  if (dashed) {
+    const d = Math.max(2, leaf.size * 0.13);
+    ctx.setLineDash([d, d * 0.7]);
+  } else {
+    ctx.setLineDash([]);
+  }
+  const base = kind.replace("-dashed", "");
+  if (base === "square") {
+    ctx.strokeRect(leaf.x + pad + 0.5, leaf.y + pad + 0.5, leaf.size - pad * 2, leaf.size - pad * 2);
+  } else if (base === "circle") {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (base === "triangle") {
+    const a0 = -Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + r * Math.cos(a0), cy + r * Math.sin(a0));
+    ctx.lineTo(cx + r * Math.cos(a0 + 2 * Math.PI / 3), cy + r * Math.sin(a0 + 2 * Math.PI / 3));
+    ctx.lineTo(cx + r * Math.cos(a0 + 4 * Math.PI / 3), cy + r * Math.sin(a0 + 4 * Math.PI / 3));
+    ctx.closePath();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawLeafDot(leaf, c) {
+  ctx.save();
+  ctx.fillStyle = c.fg;
+  ctx.beginPath();
+  ctx.arc(leaf.x + leaf.size / 2, leaf.y + leaf.size / 2,
+          Math.max(0.5, state.stroke * 0.6), 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLeafLabel(leaf, c) {
+  if (leaf.size < 26) return;
+  if (rand() * 100 > state.labelDensity) return;
+  const cx = leaf.x + leaf.size / 2;
+  const cy = leaf.y + leaf.size / 2;
+  ctx.save();
+  ctx.fillStyle = c.fg;
+  const fs = Math.min(10, Math.max(8, leaf.size * 0.09));
+  ctx.font = `${fs}px ui-monospace, monospace`;
+  ctx.textBaseline = "top";
+  ctx.fillText(`${Math.round(cx)},${Math.round(cy)}`, leaf.x + 3, leaf.y + 3);
+  ctx.restore();
+}
+
+function drawQuadtree(leaves) {
+  const c = colors();
+  const enabled = Array.from(state.shapes);
+  // Use a per-leaf deterministic shape choice based on position + seed
+  for (let i = 0; i < leaves.length; i++) {
+    const l = leaves[i];
+    // deterministic kind picker (so resizing one slider doesn't reshuffle all)
+    const h = ((l.x * 73856093) ^ (l.y * 19349663) ^ (state.seed * 83492791)) >>> 0;
+    const kind = enabled[h % enabled.length];
+    drawLeafShape(l, kind, c);
+    drawLeafDot(l, c);
+  }
+  // labels: use ordered rand consumption (labelDensity)
+  for (let i = 0; i < leaves.length; i++) drawLeafLabel(leaves[i], c);
 }
 
 /* ---------- Main ---------- */
@@ -1006,21 +930,21 @@ function render() {
   drawImageLayer(W, H);
 
   resetRand(1);
-  drawGrid(W, H);
   drawFrame(W, H);
   drawFocusRings(W, H);
 
   resetRand(2);
   drawChain(W, H);
 
+  // Quadtree pipeline
+  const leaves = buildQuadtree(W, H);
+  const edges = triangulateLeaves(leaves);
+
   resetRand(3);
-  const placed = placeShapes(W, H);
+  drawConnections(edges, leaves);
 
   resetRand(4);
-  const conns = buildConnections(placed);
-  drawConnections(conns, placed, c);
-
-  drawShapes(W, H, placed);
+  drawQuadtree(leaves);
 }
 
 bindSliders();
