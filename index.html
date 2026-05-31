@@ -83,7 +83,12 @@
   #stage { flex: 1; display: flex; align-items: center; justify-content: center;
     position: relative; overflow: hidden; }
   #canvas { background: #000; max-width: calc(100% - 48px); max-height: calc(100% - 48px);
-    box-shadow: 0 0 0 1px #1a1a1a, 0 30px 80px rgba(0,0,0,.6); }
+    box-shadow: 0 0 0 1px #1a1a1a, 0 30px 80px rgba(0,0,0,.6); cursor: default; }
+  #canvas.paint-include { cursor: crosshair; }
+  #canvas.paint-exclude { cursor: crosshair; }
+  #brushCursor { position: fixed; border-radius: 50%; pointer-events: none;
+    border: 1px solid #fff; mix-blend-mode: difference; display: none; z-index: 100; }
+  #brushCursor.show { display: block; }
   #dropHint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     pointer-events: none; color: var(--panel-muted); text-transform: uppercase; letter-spacing: .2em;
     font-size: 11px; }
@@ -112,6 +117,27 @@
     <button class="action" id="uploadBtn">Upload Image</button>
     <input type="file" id="fileInput" accept="image/*">
     <div class="hint">geometry traces the image edges</div>
+  </div>
+
+  <div class="section-title">Selection Mask</div>
+  <div class="row">
+    <div class="seg" id="maskSeg">
+      <button data-val="off" class="active">Off</button>
+      <button data-val="include">Include</button>
+      <button data-val="exclude">Exclude</button>
+    </div>
+    <div class="hint">paint regions directly on the canvas</div>
+  </div>
+  <div class="row" data-slider="brushSize" data-min="8" data-max="240" data-step="1" data-val="60">
+    <div class="label-row"><span class="label">Brush</span><span class="value">60</span></div>
+    <input type="range">
+  </div>
+  <div class="row"><button class="action" id="clearMaskBtn">Clear Mask</button></div>
+  <div class="row">
+    <div class="seg" id="showMaskSeg">
+      <button data-val="show" class="active">Show Mask</button>
+      <button data-val="hide">Hide Mask</button>
+    </div>
   </div>
 
   <div class="section-title">Frame</div>
@@ -227,16 +253,27 @@
     <div class="hint">all geometry uses this color</div>
   </div>
 
-  <div class="section-title">Connections · Delaunay</div>
+  <div class="section-title">Connections</div>
 
+  <div class="row">
+    <div class="seg" id="meshSeg">
+      <button data-val="delaunay">Delaunay</button>
+      <button data-val="allpairs" class="active">All-Pairs</button>
+    </div>
+    <div class="hint">all-pairs lets lines cross each other</div>
+  </div>
+  <div class="row" data-slider="junctionCount" data-min="0" data-max="600" data-step="1" data-val="120">
+    <div class="label-row"><span class="label">Junction Points</span><span class="value">120</span></div>
+    <input type="range">
+    <div class="hint">extra dots without a shape — also wired to the mesh</div>
+  </div>
   <div class="row" data-slider="connectionDensity" data-min="0" data-max="100" data-step="1" data-val="85">
     <div class="label-row"><span class="label">Edge Density</span><span class="value">85</span></div>
     <input type="range">
   </div>
-  <div class="row" data-slider="connectionMaxDistance" data-min="10" data-max="400" data-step="1" data-val="80">
-    <div class="label-row"><span class="label">Max Edge</span><span class="value">80</span></div>
+  <div class="row" data-slider="connectionMaxDistance" data-min="10" data-max="400" data-step="1" data-val="100">
+    <div class="label-row"><span class="label">Max Edge</span><span class="value">100</span></div>
     <input type="range">
-    <div class="hint">long links between contour fragments are cut</div>
   </div>
   <div class="row">
     <div class="seg" id="connStyleSeg">
@@ -289,6 +326,7 @@
 
 <main id="stage">
   <canvas id="canvas" width="1600" height="1100"></canvas>
+  <div id="brushCursor"></div>
   <div id="dropHint">Drop image here, or click Upload</div>
   <div class="corner-tag">Brand Asset Generator</div>
 </main>
@@ -320,8 +358,13 @@ const state = {
   stroke: 0.9,
   labelDensity: 55,
   accentColor: "#e6e6e6",
+  maskMode: "off",
+  brushSize: 60,
+  showMask: true,
+  meshAlgorithm: "allpairs",
+  junctionCount: 120,
   connectionDensity: 85,
-  connectionMaxDistance: 80,
+  connectionMaxDistance: 100,
   focusRings: 2,
   focusSpacing: 60,
   chainCount: 8,
@@ -334,6 +377,79 @@ const state = {
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const dropHint = document.getElementById("dropHint");
+const brushCursor = document.getElementById("brushCursor");
+
+/* ---------- Selection Mask ---------- */
+let maskCanvas = null;
+let maskCtx = null;
+let maskData = null;   // snapshot Uint8ClampedArray for fast lookup during placement
+
+function ensureMask(W, H) {
+  if (!maskCanvas || maskCanvas.width !== W || maskCanvas.height !== H) {
+    maskCanvas = document.createElement("canvas");
+    maskCanvas.width = W; maskCanvas.height = H;
+    maskCtx = maskCanvas.getContext("2d");
+    maskData = null;
+  }
+}
+function clearMask() {
+  if (!maskCtx) return;
+  maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+  maskData = null;
+  requestRender();
+}
+function snapshotMask() {
+  if (!maskCtx) { maskData = null; return; }
+  maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+}
+// returns "include" | "exclude" | null  for a canvas-coord point
+function maskAt(x, y) {
+  if (!maskData) return null;
+  const W = maskCanvas.width, H = maskCanvas.height;
+  const xi = Math.floor(x), yi = Math.floor(y);
+  if (xi < 0 || yi < 0 || xi >= W || yi >= H) return null;
+  const i = (yi * W + xi) * 4;
+  if (maskData[i + 3] < 32) return null;
+  return maskData[i] > maskData[i + 1] ? "exclude" : "include";
+}
+function paintAt(x, y) {
+  ensureMask(canvas.width, canvas.height);
+  if (state.maskMode === "include") {
+    // remove any exclude paint first, then add include
+    maskCtx.save();
+    maskCtx.globalCompositeOperation = "source-over";
+    maskCtx.fillStyle = "rgba(80,220,140,0.85)";
+    maskCtx.beginPath();
+    maskCtx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
+    maskCtx.fill();
+    maskCtx.restore();
+  } else if (state.maskMode === "exclude") {
+    maskCtx.save();
+    maskCtx.fillStyle = "rgba(255,80,80,0.85)";
+    maskCtx.beginPath();
+    maskCtx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
+    maskCtx.fill();
+    maskCtx.restore();
+  }
+}
+function paintLine(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist = Math.hypot(dx, dy);
+  const stepSize = Math.max(2, state.brushSize / 6);
+  const steps = Math.max(1, Math.ceil(dist / stepSize));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    paintAt(a.x + dx * t, a.y + dy * t);
+  }
+}
+
+/* render throttle so painting doesn't redraw 60 times per move */
+let renderPending = false;
+function requestRender() {
+  if (renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(() => { renderPending = false; render(); });
+}
 
 /* ---------- Seeded RNG ---------- */
 function mulberry32(a) {
@@ -434,7 +550,7 @@ function placePoints(W, H) {
   const step = Math.max(4, state.gridStep);
   const inset = state.crosshairInset + 4;
   const threshold = state.edgeThreshold / 100;
-  const skipNonEdge = state.edgeBias / 100; // probability to skip a non-edge cell
+  const skipNonEdge = state.edgeBias / 100;
   const points = [];
 
   const xStart = Math.ceil(inset / step) * step;
@@ -443,19 +559,76 @@ function placePoints(W, H) {
 
   for (let gy = yStart; gy <= H - inset; gy += step) {
     for (let gx = xStart; gx <= W - inset; gx += step) {
+      const m = maskAt(gx, gy);
+      if (m === "exclude") continue;
+      if (m === "include") {
+        points.push({ x: gx, y: gy, energy: 1, kind: null, r: 0 });
+        continue;
+      }
       const energy = cellMaxSaliency(gx - half, gy - half, step, step, W, H);
       const isEdge = energy >= threshold;
       if (!isEdge && rand() < skipNonEdge) continue;
-      points.push({ x: gx, y: gy, energy });
+      points.push({ x: gx, y: gy, energy, kind: null, r: 0 });
     }
   }
 
-  // Cap by Max Shapes — keep highest-energy cells when over the limit
   if (points.length > state.shapeCount) {
     points.sort((a, b) => b.energy - a.energy);
     points.length = state.shapeCount;
   }
   return points;
+}
+
+/* ---------- Junction points (no shape, just dots; participate in mesh) ----------
+   Placed on a half-step grid offset from shape grid so they don't overlap. */
+function placeJunctions(W, H, shapes) {
+  if (state.junctionCount <= 0) return [];
+  const step = Math.max(4, state.gridStep);
+  const halfStep = step / 2;
+  const inset = state.crosshairInset + 4;
+  const threshold = state.edgeThreshold / 100;
+  const skipNonEdge = state.edgeBias / 100;
+
+  const candidates = [];
+  const xStart = Math.ceil(inset / step) * step + halfStep;
+  const yStart = Math.ceil(inset / step) * step + halfStep;
+
+  for (let gy = yStart; gy <= H - inset; gy += step) {
+    for (let gx = xStart; gx <= W - inset; gx += step) {
+      const m = maskAt(gx, gy);
+      if (m === "exclude") continue;
+      let energy = 1;
+      if (m !== "include") {
+        energy = cellMaxSaliency(gx - halfStep, gy - halfStep, step, step, W, H);
+        const isEdge = energy >= threshold;
+        if (!isEdge && rand() < skipNonEdge) continue;
+      }
+      candidates.push({ x: gx, y: gy, energy, isJunction: true });
+    }
+  }
+  // shuffle (seeded) and take first N
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  return candidates.slice(0, state.junctionCount);
+}
+
+/* ---------- Mesh edge builders ---------- */
+function buildEdges(nodes) {
+  if (nodes.length < 2) return [];
+  if (state.meshAlgorithm === "delaunay") return triangulatePoints(nodes);
+  // all-pairs within max distance
+  const maxLen = state.connectionMaxDistance;
+  const edges = [];
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      if (Math.hypot(dx, dy) <= maxLen) edges.push([i, j]);
+    }
+  }
+  return edges;
 }
 
 /* ---------- Delaunay edges ---------- */
@@ -576,6 +749,7 @@ document.getElementById("randomizeBtn").addEventListener("click", () => {
   setSlider("edgeThreshold", Math.floor(Math.random() * 20) + 4);
   setSlider("edgeBias", Math.floor(Math.random() * 20) + 80);
   setSlider("labelDensity", Math.floor(Math.random() * 60) + 25);
+  setSlider("junctionCount", Math.floor(Math.random() * 200));
   setSlider("connectionDensity", Math.floor(Math.random() * 70) + 30);
   setSlider("connectionMaxDistance", Math.floor(Math.random() * 120) + 40);
   setSlider("focusRings", Math.floor(Math.random() * 5));
@@ -593,6 +767,10 @@ document.getElementById("randomizeBtn").addEventListener("click", () => {
   state.connectionStyle = styles[Math.floor(Math.random() * styles.length)];
   document.querySelectorAll("#connStyleSeg button").forEach(b =>
     b.classList.toggle("active", b.dataset.val === state.connectionStyle));
+  const meshes = ["delaunay", "allpairs"];
+  state.meshAlgorithm = meshes[Math.floor(Math.random() * meshes.length)];
+  document.querySelectorAll("#meshSeg button").forEach(b =>
+    b.classList.toggle("active", b.dataset.val === state.meshAlgorithm));
   render();
 });
 
@@ -627,6 +805,46 @@ const stage = document.getElementById("stage");
 stage.addEventListener("drop", e => {
   const f = e.dataTransfer.files[0]; if (f && f.type.startsWith("image/")) loadFile(f);
 });
+
+/* ---------- Canvas painting (mask) ---------- */
+function canvasPoint(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+    y: (e.clientY - rect.top) * (canvas.height / rect.height),
+  };
+}
+let painting = false;
+let lastPaint = null;
+
+canvas.addEventListener("mousedown", e => {
+  if (state.maskMode === "off") return;
+  e.preventDefault();
+  painting = true;
+  const p = canvasPoint(e);
+  paintAt(p.x, p.y);
+  lastPaint = p;
+  requestRender();
+});
+canvas.addEventListener("mousemove", e => {
+  // brush preview
+  if (state.maskMode !== "off") {
+    const rect = canvas.getBoundingClientRect();
+    const sx = rect.width / canvas.width;
+    const px = state.brushSize * sx;
+    brushCursor.style.left = (e.clientX - px / 2) + "px";
+    brushCursor.style.top = (e.clientY - px / 2) + "px";
+    brushCursor.style.width = brushCursor.style.height = px + "px";
+    brushCursor.classList.add("show");
+  }
+  if (!painting) return;
+  const p = canvasPoint(e);
+  if (lastPaint) paintLine(lastPaint, p); else paintAt(p.x, p.y);
+  lastPaint = p;
+  requestRender();
+});
+canvas.addEventListener("mouseleave", () => { brushCursor.classList.remove("show"); });
+window.addEventListener("mouseup", () => { painting = false; lastPaint = null; });
 
 /* ---------- Drawing helpers ---------- */
 function hexRgb(hex) {
@@ -958,9 +1176,43 @@ function drawMarkers(points) {
   });
 }
 
+/* ---------- Junctions & mask overlay drawing ---------- */
+function drawJunctions(junctions) {
+  if (!junctions.length) return;
+  const c = colors();
+  withCtx(() => {
+    ctx.fillStyle = c.fg;
+    for (const j of junctions) {
+      ctx.beginPath();
+      ctx.arc(j.x, j.y, Math.max(1, state.stroke * 1.4), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  withCtx(() => {
+    ctx.fillStyle = c.mute;
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.textBaseline = "middle";
+    for (const j of junctions) {
+      if (rand() * 100 > state.labelDensity * 0.4) continue;
+      ctx.fillText(`${j.x},${j.y}`, j.x + 5, j.y);
+    }
+  });
+}
+
+function drawMaskOverlay(W, H) {
+  if (!state.showMask || !maskCanvas) return;
+  withCtx(() => {
+    ctx.globalAlpha = 0.35;
+    ctx.drawImage(maskCanvas, 0, 0);
+  });
+}
+
 /* ---------- Main ---------- */
 function render() {
   const W = canvas.width, H = canvas.height;
+  ensureMask(W, H);
+  snapshotMask();
+
   ctx.fillStyle = colors().bg;
   ctx.fillRect(0, 0, W, H);
 
@@ -974,17 +1226,28 @@ function render() {
   resetRand(2);
   drawChain(W, H);
 
-  // Grid-cell edge pipeline
   resetRand(3);
-  const points = placePoints(W, H);
-  assignShapeKinds(points);
-  const edges = triangulatePoints(points);
+  const shapes = placePoints(W, H);
+  assignShapeKinds(shapes);
 
   resetRand(4);
-  drawConnections(edges, points);
+  const junctions = placeJunctions(W, H, shapes);
+
+  const allNodes = shapes.concat(junctions);
 
   resetRand(5);
-  drawMarkers(points);
+  const edges = buildEdges(allNodes);
+
+  resetRand(6);
+  drawConnections(edges, allNodes);
+
+  resetRand(7);
+  drawMarkers(shapes);
+
+  resetRand(8);
+  drawJunctions(junctions);
+
+  drawMaskOverlay(W, H);
 }
 
 bindSliders();
@@ -993,6 +1256,15 @@ bindSegment("themeSeg", v => {
   document.body.classList.toggle("bright", v === "bright");
 });
 bindSegment("connStyleSeg", v => { state.connectionStyle = v; });
+bindSegment("meshSeg", v => { state.meshAlgorithm = v; });
+bindSegment("maskSeg", v => {
+  state.maskMode = v;
+  canvas.classList.remove("paint-include", "paint-exclude");
+  if (v !== "off") canvas.classList.add(`paint-${v}`);
+  if (v === "off") brushCursor.classList.remove("show");
+});
+bindSegment("showMaskSeg", v => { state.showMask = v === "show"; });
+document.getElementById("clearMaskBtn").addEventListener("click", clearMask);
 bindShapeGrid();
 render();
 </script>
