@@ -84,8 +84,9 @@
     position: relative; overflow: hidden; }
   #canvas { background: #000; max-width: calc(100% - 48px); max-height: calc(100% - 48px);
     box-shadow: 0 0 0 1px #1a1a1a, 0 30px 80px rgba(0,0,0,.6); cursor: default; }
-  #canvas.paint-include { cursor: crosshair; }
-  #canvas.paint-exclude { cursor: crosshair; }
+  #canvas.paint-mode { cursor: crosshair; }
+  .check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .check input { margin: 0; cursor: pointer; accent-color: var(--panel-fg); }
   #brushCursor { position: fixed; border-radius: 50%; pointer-events: none;
     border: 1px solid #fff; mix-blend-mode: difference; display: none; z-index: 100; }
   #brushCursor.show { display: block; }
@@ -119,14 +120,18 @@
     <div class="hint">geometry traces the image edges</div>
   </div>
 
-  <div class="section-title">Selection Mask</div>
+  <div class="section-title">Canvas Tool</div>
   <div class="row">
     <div class="seg" id="maskSeg">
       <button data-val="off" class="active">Off</button>
-      <button data-val="include">Include</button>
-      <button data-val="exclude">Exclude</button>
+      <button data-val="mask-include">Mask +</button>
+      <button data-val="mask-exclude">Mask −</button>
     </div>
-    <div class="hint">paint regions directly on the canvas</div>
+    <div class="seg" id="placeSeg" style="margin-top:4px">
+      <button data-val="move-focus">Move Focus</button>
+      <button data-val="move-chain">Move Chain</button>
+    </div>
+    <div class="hint">paint mask · or click to drag focus / chain origin</div>
   </div>
   <div class="row" data-slider="brushSize" data-min="8" data-max="240" data-step="1" data-val="60">
     <div class="label-row"><span class="label">Brush</span><span class="value">60</span></div>
@@ -138,6 +143,27 @@
       <button data-val="show" class="active">Show Mask</button>
       <button data-val="hide">Hide Mask</button>
     </div>
+  </div>
+
+  <div class="section-title">Composition Guides</div>
+  <div class="row">
+    <label class="check"><input type="checkbox" id="centerCircleChk"> Center Circle</label>
+  </div>
+  <div class="row" data-slider="centerCircleRadius" data-min="20" data-max="900" data-step="1" data-val="220">
+    <div class="label-row"><span class="label">Circle Radius</span><span class="value">220</span></div>
+    <input type="range">
+  </div>
+  <div class="row" data-slider="centerCircleStroke" data-min="0.3" data-max="4" data-step="0.1" data-val="1.0">
+    <div class="label-row"><span class="label">Circle Stroke</span><span class="value">1.0</span></div>
+    <input type="range">
+  </div>
+  <div class="row">
+    <label class="check"><input type="checkbox" id="diagonalsChk"> Diagonals (X)</label>
+  </div>
+  <div class="row" data-slider="diagonalAngle" data-min="0" data-max="90" data-step="1" data-val="45">
+    <div class="label-row"><span class="label">Diagonal Angle</span><span class="value">45</span></div>
+    <input type="range">
+    <div class="hint">degrees from horizontal</div>
   </div>
 
   <div class="section-title">Frame</div>
@@ -293,6 +319,10 @@
     <div class="label-row"><span class="label">Ring Spacing</span><span class="value">60</span></div>
     <input type="range">
   </div>
+  <div class="row">
+    <button class="action" id="resetFocusBtn">Reset Focus to Auto</button>
+    <div class="hint">use Canvas Tool · Move Focus to place manually</div>
+  </div>
 
   <div class="section-title">Circle Chain</div>
 
@@ -312,6 +342,10 @@
     <div class="label-row"><span class="label">Chain Size Ratio</span><span class="value">0.85</span></div>
     <input type="range">
   </div>
+  <div class="row">
+    <button class="action" id="resetChainBtn">Reset Chain to Auto</button>
+    <div class="hint">use Canvas Tool · Move Chain to place manually</div>
+  </div>
 
   <div class="section-title">Seed</div>
   <div class="row" data-slider="seed" data-min="1" data-max="9999" data-step="1" data-val="2418">
@@ -320,7 +354,10 @@
   </div>
 
   <div class="row"><button class="action primary" id="randomizeBtn">Randomize All</button></div>
-  <div class="row"><button class="action" id="exportBtn">Export PNG</button></div>
+  <div class="row"><button class="action" id="exportBtn">Export Full PNG</button></div>
+  <div class="row"><button class="action" id="exportGeoBtn">Export Geometry · Transparent</button>
+    <div class="hint">PNG with overlay only — no image, no background</div>
+  </div>
 
 </aside>
 
@@ -361,6 +398,15 @@ const state = {
   maskMode: "off",
   brushSize: 60,
   showMask: true,
+  showCenterCircle: false,
+  centerCircleRadius: 220,
+  centerCircleStroke: 1.0,
+  showDiagonals: false,
+  diagonalAngle: 45,
+  focusX: null,
+  focusY: null,
+  chainX: null,
+  chainY: null,
   meshAlgorithm: "allpairs",
   junctionCount: 120,
   connectionDensity: 85,
@@ -378,6 +424,9 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const dropHint = document.getElementById("dropHint");
 const brushCursor = document.getElementById("brushCursor");
+
+/* set true while exporting geometry-only PNG so render skips image + bg */
+let geometryOnly = false;
 
 /* ---------- Selection Mask ---------- */
 let maskCanvas = null;
@@ -414,23 +463,16 @@ function maskAt(x, y) {
 }
 function paintAt(x, y) {
   ensureMask(canvas.width, canvas.height);
-  if (state.maskMode === "include") {
-    // remove any exclude paint first, then add include
-    maskCtx.save();
-    maskCtx.globalCompositeOperation = "source-over";
-    maskCtx.fillStyle = "rgba(80,220,140,0.85)";
-    maskCtx.beginPath();
-    maskCtx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
-    maskCtx.fill();
-    maskCtx.restore();
-  } else if (state.maskMode === "exclude") {
-    maskCtx.save();
-    maskCtx.fillStyle = "rgba(255,80,80,0.85)";
-    maskCtx.beginPath();
-    maskCtx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
-    maskCtx.fill();
-    maskCtx.restore();
-  }
+  const fill = state.maskMode === "mask-include" ? "rgba(80,220,140,0.85)"
+              : state.maskMode === "mask-exclude" ? "rgba(255,80,80,0.85)"
+              : null;
+  if (!fill) return;
+  maskCtx.save();
+  maskCtx.fillStyle = fill;
+  maskCtx.beginPath();
+  maskCtx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
+  maskCtx.fill();
+  maskCtx.restore();
 }
 function paintLine(a, b) {
   const dx = b.x - a.x, dy = b.y - a.y;
@@ -780,6 +822,18 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   a.href = canvas.toDataURL("image/png");
   a.click();
 });
+document.getElementById("exportGeoBtn").addEventListener("click", () => {
+  // re-render in geometry-only mode, export, then restore.
+  // happens synchronously — browser doesn't repaint in between.
+  geometryOnly = true;
+  render();
+  const a = document.createElement("a");
+  a.download = `brand-asset-geometry-${state.seed}.png`;
+  a.href = canvas.toDataURL("image/png");
+  a.click();
+  geometryOnly = false;
+  render();
+});
 
 /* ---------- File / drag-drop ---------- */
 function loadFile(file) {
@@ -817,18 +871,30 @@ function canvasPoint(e) {
 let painting = false;
 let lastPaint = null;
 
+function isMaskTool() { return state.maskMode === "mask-include" || state.maskMode === "mask-exclude"; }
+function isMoveTool() { return state.maskMode === "move-focus" || state.maskMode === "move-chain"; }
+
 canvas.addEventListener("mousedown", e => {
   if (state.maskMode === "off") return;
   e.preventDefault();
-  painting = true;
   const p = canvasPoint(e);
+  if (state.maskMode === "move-focus") {
+    state.focusX = p.x; state.focusY = p.y;
+    render();
+    return;
+  }
+  if (state.maskMode === "move-chain") {
+    state.chainX = p.x; state.chainY = p.y;
+    render();
+    return;
+  }
+  painting = true;
   paintAt(p.x, p.y);
   lastPaint = p;
   requestRender();
 });
 canvas.addEventListener("mousemove", e => {
-  // brush preview
-  if (state.maskMode !== "off") {
+  if (isMaskTool()) {
     const rect = canvas.getBoundingClientRect();
     const sx = rect.width / canvas.width;
     const px = state.brushSize * sx;
@@ -836,6 +902,8 @@ canvas.addEventListener("mousemove", e => {
     brushCursor.style.top = (e.clientY - px / 2) + "px";
     brushCursor.style.width = brushCursor.style.height = px + "px";
     brushCursor.classList.add("show");
+  } else {
+    brushCursor.classList.remove("show");
   }
   if (!painting) return;
   const p = canvasPoint(e);
@@ -993,6 +1061,8 @@ function drawFrame(W, H) {
 
 /* ---------- Focus rings ---------- */
 function focalPoint(W, H) {
+  if (state.focusX != null && state.focusY != null)
+    return { x: state.focusX, y: state.focusY };
   if (!saliencyMap) return { x: W / 2, y: H / 2 };
   let bx = 0, by = 0, bestSal = -1;
   const sw = saliencyMap.w, sh = saliencyMap.h;
@@ -1035,12 +1105,18 @@ function drawChain(W, H) {
   if (state.chainCount <= 0) return;
   const c = colors();
   const inset = state.crosshairInset + 30;
-  let ox = W / 2, oy = H / 2, bestSal = -1;
-  for (let i = 0; i < 40; i++) {
-    const cx = rrange(inset, W - inset);
-    const cy = rrange(inset, H - inset);
-    const s = saliencyAt(cx / W, cy / H);
-    if (s > bestSal) { bestSal = s; ox = cx; oy = cy; }
+  let ox, oy;
+  if (state.chainX != null && state.chainY != null) {
+    ox = state.chainX; oy = state.chainY;
+  } else {
+    ox = W / 2; oy = H / 2;
+    let bestSal = -1;
+    for (let i = 0; i < 40; i++) {
+      const cx = rrange(inset, W - inset);
+      const cy = rrange(inset, H - inset);
+      const s = saliencyAt(cx / W, cy / H);
+      if (s > bestSal) { bestSal = s; ox = cx; oy = cy; }
+    }
   }
   const angle = (state.chainAngle * Math.PI) / 180;
   let r = state.chainBaseRadius;
@@ -1207,20 +1283,65 @@ function drawMaskOverlay(W, H) {
   });
 }
 
+/* ---------- Composition Guides (center circle + diagonals) ---------- */
+function drawCompositionGuides(W, H) {
+  const c = colors();
+  const cx = W / 2, cy = H / 2;
+  if (state.showCenterCircle) {
+    withCtx(() => {
+      ctx.strokeStyle = c.fg;
+      ctx.lineWidth = state.centerCircleStroke;
+      ctx.beginPath();
+      ctx.arc(cx, cy, state.centerCircleRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      // small tick at top of circle
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - state.centerCircleRadius - 4);
+      ctx.lineTo(cx, cy - state.centerCircleRadius + 4);
+      ctx.stroke();
+    });
+  }
+  if (state.showDiagonals) {
+    withCtx(() => {
+      ctx.strokeStyle = c.mute;
+      ctx.lineWidth = Math.max(0.4, state.stroke * 0.7);
+      ctx.setLineDash([]);
+      const ang = state.diagonalAngle * Math.PI / 180;
+      const diag = Math.hypot(W, H);
+      const ex = Math.cos(ang) * diag, ey = Math.sin(ang) * diag;
+      // diagonal 1
+      ctx.beginPath();
+      ctx.moveTo(cx - ex, cy - ey);
+      ctx.lineTo(cx + ex, cy + ey);
+      ctx.stroke();
+      // diagonal 2 (mirrored)
+      ctx.beginPath();
+      ctx.moveTo(cx - ex, cy + ey);
+      ctx.lineTo(cx + ex, cy - ey);
+      ctx.stroke();
+    });
+  }
+}
+
 /* ---------- Main ---------- */
 function render() {
   const W = canvas.width, H = canvas.height;
   ensureMask(W, H);
   snapshotMask();
 
-  ctx.fillStyle = colors().bg;
-  ctx.fillRect(0, 0, W, H);
+  if (geometryOnly) {
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = colors().bg;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   resetRand(0);
-  drawImageLayer(W, H);
+  if (!geometryOnly) drawImageLayer(W, H);
 
   resetRand(1);
   drawFrame(W, H);
+  drawCompositionGuides(W, H);
   drawFocusRings(W, H);
 
   resetRand(2);
@@ -1247,7 +1368,7 @@ function render() {
   resetRand(8);
   drawJunctions(junctions);
 
-  drawMaskOverlay(W, H);
+  if (!geometryOnly) drawMaskOverlay(W, H);
 }
 
 bindSliders();
@@ -1257,14 +1378,43 @@ bindSegment("themeSeg", v => {
 });
 bindSegment("connStyleSeg", v => { state.connectionStyle = v; });
 bindSegment("meshSeg", v => { state.meshAlgorithm = v; });
-bindSegment("maskSeg", v => {
+
+function setCanvasTool(v) {
   state.maskMode = v;
-  canvas.classList.remove("paint-include", "paint-exclude");
-  if (v !== "off") canvas.classList.add(`paint-${v}`);
+  canvas.classList.toggle("paint-mode", v !== "off");
   if (v === "off") brushCursor.classList.remove("show");
+  // mirror active state across both seg groups
+  document.querySelectorAll("#maskSeg button, #placeSeg button").forEach(b =>
+    b.classList.toggle("active", b.dataset.val === v));
+}
+document.getElementById("maskSeg").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  setCanvasTool(btn.dataset.val);
+  render();
 });
+document.getElementById("placeSeg").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  setCanvasTool(btn.dataset.val);
+  render();
+});
+
 bindSegment("showMaskSeg", v => { state.showMask = v === "show"; });
 document.getElementById("clearMaskBtn").addEventListener("click", clearMask);
+
+document.getElementById("centerCircleChk").addEventListener("change", e => {
+  state.showCenterCircle = e.target.checked; render();
+});
+document.getElementById("diagonalsChk").addEventListener("change", e => {
+  state.showDiagonals = e.target.checked; render();
+});
+
+document.getElementById("resetFocusBtn").addEventListener("click", () => {
+  state.focusX = null; state.focusY = null; render();
+});
+document.getElementById("resetChainBtn").addEventListener("click", () => {
+  state.chainX = null; state.chainY = null; render();
+});
+
 bindShapeGrid();
 render();
 </script>
