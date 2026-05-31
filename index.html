@@ -72,6 +72,13 @@
   input[type=text] { width: 100%; background: transparent; color: var(--panel-fg);
     border: 1px solid var(--panel-line); padding: 6px 8px; font: inherit; }
   input[type=file] { display: none; }
+  input[type=color] { width: 100%; height: 28px; background: transparent;
+    border: 1px solid var(--panel-line); padding: 2px; cursor: pointer; }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: 0; }
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; }
+  .swatches button { aspect-ratio: 1; border: 1px solid var(--panel-line);
+    background: var(--c); cursor: pointer; padding: 0; }
 
   #stage { flex: 1; display: flex; align-items: center; justify-content: center;
     position: relative; overflow: hidden; }
@@ -172,44 +179,52 @@
     <div class="hint">points sampled from image contour pixels</div>
   </div>
 
-  <div class="row" data-slider="shapeCount" data-min="0" data-max="800" data-step="1" data-val="320">
-    <div class="label-row"><span class="label">Shape Count</span><span class="value">320</span></div>
+  <div class="row" data-slider="shapeCount" data-min="0" data-max="1200" data-step="1" data-val="500">
+    <div class="label-row"><span class="label">Max Shapes</span><span class="value">500</span></div>
     <input type="range">
+    <div class="hint">caps highest-energy cells if too many qualify</div>
   </div>
-  <div class="row" data-slider="edgeBias" data-min="0" data-max="100" data-step="1" data-val="92">
-    <div class="label-row"><span class="label">Edge Bias</span><span class="value">92</span></div>
+  <div class="row" data-slider="gridStep" data-min="8" data-max="120" data-step="1" data-val="40">
+    <div class="label-row"><span class="label">Grid Step</span><span class="value">40</span></div>
     <input type="range">
-    <div class="hint">0 = uniform · 100 = strictly on edges</div>
+    <div class="hint">all shape positions snap to this grid</div>
+  </div>
+  <div class="row" data-slider="shapeSize" data-min="6" data-max="80" data-step="1" data-val="24">
+    <div class="label-row"><span class="label">Shape Size</span><span class="value">24</span></div>
+    <input type="range">
+    <div class="hint">uniform — every shape this size</div>
   </div>
   <div class="row" data-slider="edgeThreshold" data-min="1" data-max="60" data-step="1" data-val="8">
     <div class="label-row"><span class="label">Edge Threshold</span><span class="value">8</span></div>
     <input type="range">
-    <div class="hint">% of max gradient to count as contour</div>
+    <div class="hint">% of max gradient required in a cell</div>
   </div>
-  <div class="row" data-slider="minRadius" data-min="2" data-max="60" data-step="1" data-val="4">
-    <div class="label-row"><span class="label">Min Radius</span><span class="value">4</span></div>
+  <div class="row" data-slider="edgeBias" data-min="0" data-max="100" data-step="1" data-val="100">
+    <div class="label-row"><span class="label">Edge-Only</span><span class="value">100</span></div>
+    <input type="range">
+    <div class="hint">0 = fill all grid · 100 = only contour cells</div>
+  </div>
+  <div class="row" data-slider="stroke" data-min="0.3" data-max="3" data-step="0.1" data-val="0.9">
+    <div class="label-row"><span class="label">Stroke</span><span class="value">0.9</span></div>
     <input type="range">
   </div>
-  <div class="row" data-slider="maxRadius" data-min="4" data-max="120" data-step="1" data-val="18">
-    <div class="label-row"><span class="label">Max Radius</span><span class="value">18</span></div>
+  <div class="row" data-slider="labelDensity" data-min="0" data-max="100" data-step="1" data-val="55">
+    <div class="label-row"><span class="label">Label Density</span><span class="value">55</span></div>
     <input type="range">
   </div>
-  <div class="row" data-slider="minDistance" data-min="2" data-max="120" data-step="1" data-val="14">
-    <div class="label-row"><span class="label">Min Distance</span><span class="value">14</span></div>
-    <input type="range">
-  </div>
-  <div class="row" data-slider="sizeVariation" data-min="0" data-max="100" data-step="1" data-val="60">
-    <div class="label-row"><span class="label">Size Variation</span><span class="value">60</span></div>
-    <input type="range">
-    <div class="hint">stronger edges → smaller shapes</div>
-  </div>
-  <div class="row" data-slider="stroke" data-min="0.3" data-max="3" data-step="0.1" data-val="0.8">
-    <div class="label-row"><span class="label">Stroke</span><span class="value">0.8</span></div>
-    <input type="range">
-  </div>
-  <div class="row" data-slider="labelDensity" data-min="0" data-max="100" data-step="1" data-val="35">
-    <div class="label-row"><span class="label">Label Density</span><span class="value">35</span></div>
-    <input type="range">
+
+  <div class="section-title">Accent Color</div>
+  <div class="row">
+    <input type="color" id="accentColor" value="#e6e6e6">
+    <div class="swatches" id="swatches">
+      <button data-color="#e6e6e6" style="--c:#e6e6e6"></button>
+      <button data-color="#0a0a0a" style="--c:#0a0a0a"></button>
+      <button data-color="#5fcf8c" style="--c:#5fcf8c"></button>
+      <button data-color="#ff5722" style="--c:#ff5722"></button>
+      <button data-color="#3b82f6" style="--c:#3b82f6"></button>
+      <button data-color="#f5d76e" style="--c:#f5d76e"></button>
+    </div>
+    <div class="hint">all geometry uses this color</div>
   </div>
 
   <div class="section-title">Connections · Delaunay</div>
@@ -297,15 +312,14 @@ const state = {
   pixelSize: 14,
   pixelZones: 0,
   overlayOpacity: 100,
-  shapeCount: 320,
-  edgeBias: 92,
+  shapeCount: 500,
+  gridStep: 40,
+  shapeSize: 24,
   edgeThreshold: 8,
-  minRadius: 4,
-  maxRadius: 18,
-  minDistance: 14,
-  sizeVariation: 60,
-  stroke: 0.8,
-  labelDensity: 35,
+  edgeBias: 100,
+  stroke: 0.9,
+  labelDensity: 55,
+  accentColor: "#e6e6e6",
   connectionDensity: 85,
   connectionMaxDistance: 80,
   focusRings: 2,
@@ -340,8 +354,6 @@ function rrange(min, max) { return min + rand() * (max - min); }
    Edge candidates are pixels whose value exceeds edgeThreshold —
    sampling will preferentially land on them. */
 let saliencyMap = null;     // { w, h, data: Float32Array }
-let edgeCandidates = null;  // {x,y,w}[]  (canvas-space)
-let edgeMaxValue = 1;
 
 function computeSaliency(img) {
   const sw = 240;
@@ -386,27 +398,6 @@ function computeSaliency(img) {
   const norm = gmax || 1;
   for (let i = 0; i < blur.length; i++) out[i] = blur[i] / norm;
   saliencyMap = { w: sw, h: sh, data: out };
-  edgeMaxValue = 1;
-  edgeCandidates = null; // rebuilt lazily per render (threshold can change)
-}
-
-function rebuildEdgeCandidates(W, H) {
-  edgeCandidates = [];
-  if (!saliencyMap) return;
-  const sw = saliencyMap.w, sh = saliencyMap.h;
-  const thr = state.edgeThreshold / 100;
-  for (let y = 1; y < sh - 1; y++) {
-    for (let x = 1; x < sw - 1; x++) {
-      const w = saliencyMap.data[y * sw + x];
-      if (w >= thr) {
-        edgeCandidates.push({
-          x: (x + 0.5) / sw * W,
-          y: (y + 0.5) / sh * H,
-          w,
-        });
-      }
-    }
-  }
 }
 
 function saliencyAt(fx, fy) {
@@ -416,54 +407,53 @@ function saliencyAt(fx, fy) {
   return saliencyMap.data[sy * saliencyMap.w + sx];
 }
 
-/* ---------- Poisson-disk-ish edge sampling ---------- */
+/* max gradient inside a canvas-space rect (cell energy test) */
+function cellMaxSaliency(x, y, w, h, W, H) {
+  if (!saliencyMap) return 0;
+  const sw = saliencyMap.w, sh = saliencyMap.h;
+  const sx0 = Math.max(0, Math.floor(x / W * sw));
+  const sy0 = Math.max(0, Math.floor(y / H * sh));
+  const sx1 = Math.min(sw, Math.ceil((x + w) / W * sw));
+  const sy1 = Math.min(sh, Math.ceil((y + h) / H * sh));
+  let max = 0;
+  for (let yy = sy0; yy < sy1; yy++)
+    for (let xx = sx0; xx < sx1; xx++) {
+      const s = saliencyMap.data[yy * sw + xx];
+      if (s > max) max = s;
+    }
+  return max;
+}
+
+/* ---------- Grid-cell placement filtered by edge energy ----------
+   For each grid cell that overlaps an image edge, place one shape
+   at that exact grid coordinate. All shapes are the same size.
+   This matches Stoyanov's reference: snapped grid, uniform markers,
+   one per detected contour cell. */
 function placePoints(W, H) {
   if (state.shapeCount <= 0) return [];
-  const minDist = state.minDistance;
-  const cellSize = Math.max(2, minDist / Math.SQRT2);
-  const cols = Math.ceil(W / cellSize);
-  const rows = Math.ceil(H / cellSize);
-  const grid = new Array(cols * rows).fill(null);
-
-  const fits = (x, y) => {
-    const cx = Math.floor(x / cellSize), cy = Math.floor(y / cellSize);
-    const r = 2;
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      const nx = cx + dx, ny = cy + dy;
-      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
-      const p = grid[ny * cols + nx];
-      if (p && Math.hypot(p.x - x, p.y - y) < minDist) return false;
-    }
-    return true;
-  };
-  const add = (x, y, sal) => {
-    const cx = Math.floor(x / cellSize), cy = Math.floor(y / cellSize);
-    const point = { x, y, sal };
-    grid[cy * cols + cx] = point;
-    return point;
-  };
-
+  const step = Math.max(4, state.gridStep);
   const inset = state.crosshairInset + 4;
-  const useEdges = edgeCandidates && edgeCandidates.length > 0;
+  const threshold = state.edgeThreshold / 100;
+  const skipNonEdge = state.edgeBias / 100; // probability to skip a non-edge cell
   const points = [];
-  const maxTries = state.shapeCount * 60;
 
-  for (let i = 0; i < maxTries && points.length < state.shapeCount; i++) {
-    let x, y, sal;
-    if (useEdges && rand() * 100 < state.edgeBias) {
-      const cand = edgeCandidates[Math.floor(rand() * edgeCandidates.length)];
-      // jitter slightly so multiple shapes can sit along the same contour line
-      x = cand.x + (rand() - 0.5) * minDist * 0.6;
-      y = cand.y + (rand() - 0.5) * minDist * 0.6;
-      sal = cand.w;
-    } else {
-      x = rrange(inset, W - inset);
-      y = rrange(inset, H - inset);
-      sal = saliencyAt(x / W, y / H);
+  const xStart = Math.ceil(inset / step) * step;
+  const yStart = Math.ceil(inset / step) * step;
+  const half = step / 2;
+
+  for (let gy = yStart; gy <= H - inset; gy += step) {
+    for (let gx = xStart; gx <= W - inset; gx += step) {
+      const energy = cellMaxSaliency(gx - half, gy - half, step, step, W, H);
+      const isEdge = energy >= threshold;
+      if (!isEdge && rand() < skipNonEdge) continue;
+      points.push({ x: gx, y: gy, energy });
     }
-    if (x < inset || x > W - inset || y < inset || y > H - inset) continue;
-    if (!fits(x, y)) continue;
-    points.push(add(x, y, sal));
+  }
+
+  // Cap by Max Shapes — keep highest-energy cells when over the limit
+  if (points.length > state.shapeCount) {
+    points.sort((a, b) => b.energy - a.energy);
+    points.length = state.shapeCount;
   }
   return points;
 }
@@ -562,6 +552,14 @@ function bindShapeGrid() {
 
 document.getElementById("frameTop").addEventListener("input", e => { state.frameTop = e.target.value; render(); });
 document.getElementById("frameBot").addEventListener("input", e => { state.frameBot = e.target.value; render(); });
+const accentInput = document.getElementById("accentColor");
+accentInput.addEventListener("input", e => { state.accentColor = e.target.value; render(); });
+document.getElementById("swatches").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  state.accentColor = btn.dataset.color;
+  accentInput.value = btn.dataset.color;
+  render();
+});
 document.getElementById("uploadBtn").addEventListener("click", () => document.getElementById("fileInput").click());
 document.getElementById("fileInput").addEventListener("change", e => {
   const f = e.target.files[0]; if (f) loadFile(f);
@@ -572,14 +570,12 @@ document.getElementById("randomizeBtn").addEventListener("click", () => {
   setSlider("threshold", Math.floor(Math.random() * 60) + 20);
   setSlider("pixelSize", Math.floor(Math.random() * 24) + 6);
   setSlider("pixelZones", Math.floor(Math.random() * 3));
-  setSlider("shapeCount", Math.floor(Math.random() * 500) + 150);
-  setSlider("edgeBias", Math.floor(Math.random() * 30) + 70);
+  setSlider("shapeCount", Math.floor(Math.random() * 600) + 200);
+  setSlider("gridStep", Math.floor(Math.random() * 50) + 24);
+  setSlider("shapeSize", Math.floor(Math.random() * 24) + 14);
   setSlider("edgeThreshold", Math.floor(Math.random() * 20) + 4);
-  setSlider("minRadius", Math.floor(Math.random() * 6) + 3);
-  setSlider("maxRadius", Math.floor(Math.random() * 30) + 12);
-  setSlider("minDistance", Math.floor(Math.random() * 30) + 8);
-  setSlider("sizeVariation", Math.floor(Math.random() * 100));
-  setSlider("labelDensity", Math.floor(Math.random() * 60) + 15);
+  setSlider("edgeBias", Math.floor(Math.random() * 20) + 80);
+  setSlider("labelDensity", Math.floor(Math.random() * 60) + 25);
   setSlider("connectionDensity", Math.floor(Math.random() * 70) + 30);
   setSlider("connectionMaxDistance", Math.floor(Math.random() * 120) + 40);
   setSlider("focusRings", Math.floor(Math.random() * 5));
@@ -633,10 +629,22 @@ stage.addEventListener("drop", e => {
 });
 
 /* ---------- Drawing helpers ---------- */
+function hexRgb(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [230, 230, 230];
+}
+function rgba(hex, a) {
+  const [r, g, b] = hexRgb(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
 function colors() {
-  if (state.theme === "bright")
-    return { bg: "#efeee9", fg: "#0a0a0a", mute: "rgba(0,0,0,.45)", soft: "rgba(0,0,0,.15)" };
-  return { bg: "#0a0a0a", fg: "#e6e6e6", mute: "rgba(255,255,255,.45)", soft: "rgba(255,255,255,.15)" };
+  const bg = state.theme === "bright" ? "#efeee9" : "#0a0a0a";
+  return {
+    bg,
+    fg: state.accentColor,
+    mute: rgba(state.accentColor, 0.5),
+    soft: rgba(state.accentColor, 0.18),
+  };
 }
 function withCtx(fn) { ctx.save(); fn(); ctx.restore(); }
 
@@ -865,14 +873,12 @@ function drawConnections(edges, points) {
       const dx = pb.x - pa.x, dy = pb.y - pa.y;
       const d = Math.hypot(dx, dy);
       if (d > maxLen || d < 1) continue;
-      // start/end at shape boundary so line doesn't cross the marker
-      const ux = dx / d, uy = dy / d;
-      const offA = pa.r + 2, offB = pb.r + 2;
+      // center-to-center — line passes through markers (matches reference)
       const style = stylePool[Math.floor(rand() * stylePool.length)];
       ctx.setLineDash(style === "dashed" ? [4, 3] : []);
       ctx.beginPath();
-      ctx.moveTo(pa.x + ux * offA, pa.y + uy * offA);
-      ctx.lineTo(pb.x - ux * offB, pb.y - uy * offB);
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
       ctx.stroke();
     }
   });
@@ -896,14 +902,11 @@ function shapePath(base, r) {
 
 function assignShapeKinds(points) {
   const enabled = Array.from(state.shapes);
+  const r = state.shapeSize / 2;
   for (const p of points) {
-    const h = ((Math.floor(p.x) * 73856093) ^ (Math.floor(p.y) * 19349663) ^ (state.seed * 83492791)) >>> 0;
+    const h = ((p.x * 73856093) ^ (p.y * 19349663) ^ (state.seed * 83492791)) >>> 0;
     p.kind = enabled[h % enabled.length];
-    // size: base random, then bias smaller on stronger edges if sizeVariation > 0
-    const baseR = rrange(state.minRadius, Math.max(state.minRadius + 1, state.maxRadius));
-    const sv = state.sizeVariation / 100;
-    const sizeFactor = 1 - sv * Math.min(1, p.sal * 1.5);
-    p.r = Math.max(state.minRadius, baseR * Math.max(0.35, sizeFactor));
+    p.r = r;
   }
 }
 
@@ -912,8 +915,8 @@ function drawMarkers(points) {
   withCtx(() => {
     ctx.lineWidth = state.stroke;
     for (const p of points) {
-      // crosshair
-      const tk = Math.min(p.r * 1.3, p.r + 6);
+      // tiny crosshair contained inside the shape
+      const tk = Math.min(p.r * 0.45, 3);
       withCtx(() => {
         ctx.strokeStyle = c.mute;
         ctx.lineWidth = Math.max(0.4, state.stroke * 0.6);
@@ -950,7 +953,7 @@ function drawMarkers(points) {
     ctx.textBaseline = "middle";
     for (const p of points) {
       if (rand() * 100 > state.labelDensity) continue;
-      ctx.fillText(`${Math.round(p.x)},${Math.round(p.y)}`, p.x + p.r + 4, p.y);
+      ctx.fillText(`${p.x},${p.y}`, p.x + p.r + 4, p.y);
     }
   });
 }
@@ -971,8 +974,7 @@ function render() {
   resetRand(2);
   drawChain(W, H);
 
-  // Edge-following pipeline
-  rebuildEdgeCandidates(W, H);
+  // Grid-cell edge pipeline
   resetRand(3);
   const points = placePoints(W, H);
   assignShapeKinds(points);
