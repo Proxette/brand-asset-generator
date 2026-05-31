@@ -168,6 +168,11 @@
 
   <div class="section-title">Frame</div>
 
+  <div class="row">
+    <label class="check"><input type="checkbox" id="showFrameChk" checked> Show Frame</label>
+    <div class="hint">uncheck to remove the border, corners, ticks &amp; text</div>
+  </div>
+
   <div class="row"><div class="label-row"><span class="label">Frame Text · Top</span></div>
     <input type="text" id="frameTop" value="Visual Anatomy"></div>
   <div class="row"><div class="label-row"><span class="label">Frame Text · Bottom</span></div>
@@ -395,6 +400,7 @@ const state = {
   stroke: 0.9,
   labelDensity: 55,
   accentColor: "#e6e6e6",
+  showFrame: true,
   maskMode: "off",
   brushSize: 60,
   showMask: true,
@@ -1008,6 +1014,7 @@ function drawPixelZone(img, W, H, z) {
 
 /* ---------- Frame ---------- */
 function drawFrame(W, H) {
+  if (!state.showFrame) return;
   const c = colors();
   const inset = state.crosshairInset;
   withCtx(() => {
@@ -1401,6 +1408,9 @@ document.getElementById("placeSeg").addEventListener("click", e => {
 bindSegment("showMaskSeg", v => { state.showMask = v === "show"; });
 document.getElementById("clearMaskBtn").addEventListener("click", clearMask);
 
+document.getElementById("showFrameChk").addEventListener("change", e => {
+  state.showFrame = e.target.checked; render();
+});
 document.getElementById("centerCircleChk").addEventListener("change", e => {
   state.showCenterCircle = e.target.checked; render();
 });
