@@ -104,19 +104,15 @@
   <div class="row">
     <button class="action" id="uploadBtn">Upload Image</button>
     <input type="file" id="fileInput" accept="image/*">
-    <div class="hint">canvas adopts image aspect · quadtree follows detail</div>
+    <div class="hint">geometry traces the image edges</div>
   </div>
 
   <div class="section-title">Frame</div>
 
-  <div class="row">
-    <div class="label-row"><span class="label">Frame Text · Top</span></div>
-    <input type="text" id="frameTop" value="Visual Anatomy">
-  </div>
-  <div class="row">
-    <div class="label-row"><span class="label">Frame Text · Bottom</span></div>
-    <input type="text" id="frameBot" value="Specimen 0418">
-  </div>
+  <div class="row"><div class="label-row"><span class="label">Frame Text · Top</span></div>
+    <input type="text" id="frameTop" value="Visual Anatomy"></div>
+  <div class="row"><div class="label-row"><span class="label">Frame Text · Bottom</span></div>
+    <input type="text" id="frameBot" value="Specimen 0418"></div>
 
   <div class="row" data-slider="crosshairInset" data-min="8" data-max="80" data-step="1" data-val="32">
     <div class="label-row"><span class="label">Frame Inset</span><span class="value">32</span></div>
@@ -141,8 +137,8 @@
     <div class="label-row"><span class="label">Pixel Size</span><span class="value">14</span></div>
     <input type="range">
   </div>
-  <div class="row" data-slider="pixelZones" data-min="0" data-max="6" data-step="1" data-val="2">
-    <div class="label-row"><span class="label">Pixel Zones</span><span class="value">2</span></div>
+  <div class="row" data-slider="pixelZones" data-min="0" data-max="6" data-step="1" data-val="0">
+    <div class="label-row"><span class="label">Pixel Zones</span><span class="value">0</span></div>
     <input type="range">
   </div>
   <div class="row" data-slider="overlayOpacity" data-min="0" data-max="100" data-step="1" data-val="100">
@@ -150,7 +146,7 @@
     <input type="range">
   </div>
 
-  <div class="section-title">Shapes · Quadtree</div>
+  <div class="section-title">Shapes · Edge-following</div>
 
   <div class="row">
     <div class="shape-grid" id="shapeGrid">
@@ -173,28 +169,39 @@
         <svg viewBox="0 0 20 20"><polygon points="10,3 17,17 3,17" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/></svg>
       </button>
     </div>
-    <div class="hint">quadtree subdivides where image has detail</div>
+    <div class="hint">points sampled from image contour pixels</div>
   </div>
 
-  <div class="row" data-slider="gridStep" data-min="2" data-max="32" data-step="1" data-val="8">
-    <div class="label-row"><span class="label">Grid Step</span><span class="value">8</span></div>
+  <div class="row" data-slider="shapeCount" data-min="0" data-max="800" data-step="1" data-val="320">
+    <div class="label-row"><span class="label">Shape Count</span><span class="value">320</span></div>
     <input type="range">
-    <div class="hint">base unit · all sizes snap to this multiple</div>
   </div>
-  <div class="row" data-slider="minLeafSize" data-min="8" data-max="96" data-step="1" data-val="20">
-    <div class="label-row"><span class="label">Min Leaf</span><span class="value">20</span></div>
+  <div class="row" data-slider="edgeBias" data-min="0" data-max="100" data-step="1" data-val="92">
+    <div class="label-row"><span class="label">Edge Bias</span><span class="value">92</span></div>
     <input type="range">
-    <div class="hint">smallest quadrant in high-detail zones</div>
+    <div class="hint">0 = uniform · 100 = strictly on edges</div>
   </div>
-  <div class="row" data-slider="maxLeafSize" data-min="32" data-max="400" data-step="1" data-val="160">
-    <div class="label-row"><span class="label">Max Leaf</span><span class="value">160</span></div>
+  <div class="row" data-slider="edgeThreshold" data-min="1" data-max="60" data-step="1" data-val="8">
+    <div class="label-row"><span class="label">Edge Threshold</span><span class="value">8</span></div>
     <input type="range">
-    <div class="hint">largest quadrant in flat zones</div>
+    <div class="hint">% of max gradient to count as contour</div>
   </div>
-  <div class="row" data-slider="energyThreshold" data-min="1" data-max="80" data-step="1" data-val="18">
-    <div class="label-row"><span class="label">Energy Threshold</span><span class="value">18</span></div>
+  <div class="row" data-slider="minRadius" data-min="2" data-max="60" data-step="1" data-val="4">
+    <div class="label-row"><span class="label">Min Radius</span><span class="value">4</span></div>
     <input type="range">
-    <div class="hint">edge density needed to keep subdividing</div>
+  </div>
+  <div class="row" data-slider="maxRadius" data-min="4" data-max="120" data-step="1" data-val="18">
+    <div class="label-row"><span class="label">Max Radius</span><span class="value">18</span></div>
+    <input type="range">
+  </div>
+  <div class="row" data-slider="minDistance" data-min="2" data-max="120" data-step="1" data-val="14">
+    <div class="label-row"><span class="label">Min Distance</span><span class="value">14</span></div>
+    <input type="range">
+  </div>
+  <div class="row" data-slider="sizeVariation" data-min="0" data-max="100" data-step="1" data-val="60">
+    <div class="label-row"><span class="label">Size Variation</span><span class="value">60</span></div>
+    <input type="range">
+    <div class="hint">stronger edges → smaller shapes</div>
   </div>
   <div class="row" data-slider="stroke" data-min="0.3" data-max="3" data-step="0.1" data-val="0.8">
     <div class="label-row"><span class="label">Stroke</span><span class="value">0.8</span></div>
@@ -203,20 +210,18 @@
   <div class="row" data-slider="labelDensity" data-min="0" data-max="100" data-step="1" data-val="35">
     <div class="label-row"><span class="label">Label Density</span><span class="value">35</span></div>
     <input type="range">
-    <div class="hint">% of quadrants showing coordinate labels</div>
   </div>
 
   <div class="section-title">Connections · Delaunay</div>
 
-  <div class="row" data-slider="connectionDensity" data-min="0" data-max="100" data-step="1" data-val="100">
-    <div class="label-row"><span class="label">Edge Density</span><span class="value">100</span></div>
+  <div class="row" data-slider="connectionDensity" data-min="0" data-max="100" data-step="1" data-val="85">
+    <div class="label-row"><span class="label">Edge Density</span><span class="value">85</span></div>
     <input type="range">
-    <div class="hint">% of triangulated edges to draw</div>
   </div>
-  <div class="row" data-slider="connectionMaxDistance" data-min="20" data-max="600" data-step="1" data-val="140">
-    <div class="label-row"><span class="label">Max Edge</span><span class="value">140</span></div>
+  <div class="row" data-slider="connectionMaxDistance" data-min="10" data-max="400" data-step="1" data-val="80">
+    <div class="label-row"><span class="label">Max Edge</span><span class="value">80</span></div>
     <input type="range">
-    <div class="hint">filter out long stretching edges</div>
+    <div class="hint">long links between contour fragments are cut</div>
   </div>
   <div class="row">
     <div class="seg" id="connStyleSeg">
@@ -228,8 +233,8 @@
 
   <div class="section-title">Focus</div>
 
-  <div class="row" data-slider="focusRings" data-min="0" data-max="8" data-step="1" data-val="3">
-    <div class="label-row"><span class="label">Focus Rings</span><span class="value">3</span></div>
+  <div class="row" data-slider="focusRings" data-min="0" data-max="8" data-step="1" data-val="2">
+    <div class="label-row"><span class="label">Focus Rings</span><span class="value">2</span></div>
     <input type="range">
   </div>
   <div class="row" data-slider="focusSpacing" data-min="20" data-max="200" data-step="1" data-val="60">
@@ -239,8 +244,8 @@
 
   <div class="section-title">Circle Chain</div>
 
-  <div class="row" data-slider="chainCount" data-min="0" data-max="40" data-step="1" data-val="10">
-    <div class="label-row"><span class="label">Chain Count</span><span class="value">10</span></div>
+  <div class="row" data-slider="chainCount" data-min="0" data-max="40" data-step="1" data-val="8">
+    <div class="label-row"><span class="label">Chain Count</span><span class="value">8</span></div>
     <input type="range">
   </div>
   <div class="row" data-slider="chainAngle" data-min="0" data-max="360" data-step="1" data-val="20">
@@ -290,19 +295,22 @@ const state = {
   tickDensity: 32,
   threshold: 40,
   pixelSize: 14,
-  pixelZones: 2,
+  pixelZones: 0,
   overlayOpacity: 100,
-  gridStep: 8,
-  minLeafSize: 20,
-  maxLeafSize: 160,
-  energyThreshold: 18,
+  shapeCount: 320,
+  edgeBias: 92,
+  edgeThreshold: 8,
+  minRadius: 4,
+  maxRadius: 18,
+  minDistance: 14,
+  sizeVariation: 60,
   stroke: 0.8,
   labelDensity: 35,
-  connectionDensity: 100,
-  connectionMaxDistance: 140,
-  focusRings: 3,
+  connectionDensity: 85,
+  connectionMaxDistance: 80,
+  focusRings: 2,
   focusSpacing: 60,
-  chainCount: 10,
+  chainCount: 8,
   chainAngle: 20,
   chainBaseRadius: 80,
   chainSizeRatio: 0.85,
@@ -326,14 +334,17 @@ function mulberry32(a) {
 let rand = mulberry32(state.seed);
 function resetRand(offset = 0) { rand = mulberry32((state.seed | 0) + offset); }
 function rrange(min, max) { return min + rand() * (max - min); }
-function rint(min, max) { return Math.floor(rrange(min, max + 1)); }
-function rchoice(arr) { return arr[Math.floor(rand() * arr.length)]; }
 
-/* ---------- Saliency map (image-content awareness) ---------- */
-let saliencyMap = null;
+/* ---------- Saliency / Edge map ----------
+   Gradient magnitude per pixel, blurred, normalized 0..1.
+   Edge candidates are pixels whose value exceeds edgeThreshold —
+   sampling will preferentially land on them. */
+let saliencyMap = null;     // { w, h, data: Float32Array }
+let edgeCandidates = null;  // {x,y,w}[]  (canvas-space)
+let edgeMaxValue = 1;
 
 function computeSaliency(img) {
-  const sw = 200;
+  const sw = 240;
   const sh = Math.max(8, Math.round(sw * img.height / img.width));
   const off = document.createElement("canvas");
   off.width = sw; off.height = sh;
@@ -341,7 +352,7 @@ function computeSaliency(img) {
   octx.drawImage(img, 0, 0, sw, sh);
   let data;
   try { data = octx.getImageData(0, 0, sw, sh).data; }
-  catch (e) { saliencyMap = null; return; }
+  catch (e) { saliencyMap = null; edgeCandidates = null; return; }
   const lum = new Float32Array(sw * sh);
   for (let i = 0, n = sw * sh; i < n; i++)
     lum[i] = 0.2126 * data[i*4] + 0.7152 * data[i*4+1] + 0.0722 * data[i*4+2];
@@ -350,6 +361,7 @@ function computeSaliency(img) {
   for (let y = 1; y < sh - 1; y++) {
     for (let x = 1; x < sw - 1; x++) {
       const i = y * sw + x;
+      // Sobel-ish via central differences
       const gx = lum[i+1] - lum[i-1];
       const gy = lum[i+sw] - lum[i-sw];
       const m = Math.hypot(gx, gy);
@@ -357,7 +369,7 @@ function computeSaliency(img) {
       if (m > gmax) gmax = m;
     }
   }
-  // box-blur 3x3
+  // light blur so edges have some width (so candidates form contour bands)
   const blur = new Float32Array(sw * sh);
   for (let y = 0; y < sh; y++) {
     for (let x = 0; x < sw; x++) {
@@ -374,72 +386,102 @@ function computeSaliency(img) {
   const norm = gmax || 1;
   for (let i = 0; i < blur.length; i++) out[i] = blur[i] / norm;
   saliencyMap = { w: sw, h: sh, data: out };
+  edgeMaxValue = 1;
+  edgeCandidates = null; // rebuilt lazily per render (threshold can change)
 }
 
-/* energy of a canvas-space rect — mean saliency inside */
-function rectEnergy(x, y, size, W, H) {
-  if (!saliencyMap) return 0;
+function rebuildEdgeCandidates(W, H) {
+  edgeCandidates = [];
+  if (!saliencyMap) return;
   const sw = saliencyMap.w, sh = saliencyMap.h;
-  const sx0 = Math.max(0, Math.floor(x / W * sw));
-  const sy0 = Math.max(0, Math.floor(y / H * sh));
-  const sx1 = Math.min(sw, Math.ceil((x + size) / W * sw));
-  const sy1 = Math.min(sh, Math.ceil((y + size) / H * sh));
-  if (sx1 <= sx0 || sy1 <= sy0) return 0;
-  let sum = 0, count = 0;
-  for (let yy = sy0; yy < sy1; yy++)
-    for (let xx = sx0; xx < sx1; xx++) {
-      sum += saliencyMap.data[yy * sw + xx];
-      count++;
+  const thr = state.edgeThreshold / 100;
+  for (let y = 1; y < sh - 1; y++) {
+    for (let x = 1; x < sw - 1; x++) {
+      const w = saliencyMap.data[y * sw + x];
+      if (w >= thr) {
+        edgeCandidates.push({
+          x: (x + 0.5) / sw * W,
+          y: (y + 0.5) / sh * H,
+          w,
+        });
+      }
     }
-  return count > 0 ? sum / count : 0;
+  }
 }
 
-/* ---------- Quadtree ---------- */
-function buildQuadtree(W, H) {
-  const gridStep = state.gridStep;
-  const minLeaf = Math.max(gridStep, state.minLeafSize);
-  const maxLeaf = Math.max(minLeaf, state.maxLeafSize);
-  const threshold = state.energyThreshold / 100;
-  // start with the smallest power-of-2 multiple of gridStep that covers the canvas
-  let rootSize = gridStep;
-  while (rootSize < Math.max(W, H)) rootSize *= 2;
+function saliencyAt(fx, fy) {
+  if (!saliencyMap) return 0;
+  const sx = Math.max(0, Math.min(saliencyMap.w - 1, Math.floor(fx * saliencyMap.w)));
+  const sy = Math.max(0, Math.min(saliencyMap.h - 1, Math.floor(fy * saliencyMap.h)));
+  return saliencyMap.data[sy * saliencyMap.w + sx];
+}
 
-  const leaves = [];
-  function recurse(x, y, size) {
-    if (x >= W || y >= H) return;
-    const half = size / 2;
-    const energy = rectEnergy(x, y, size, W, H);
-    const mustSubdivide = size > maxLeaf;
-    const wantSubdivide = size > minLeaf && energy > threshold;
-    if ((mustSubdivide || wantSubdivide) && half >= gridStep) {
-      recurse(x,        y,        half);
-      recurse(x + half, y,        half);
-      recurse(x,        y + half, half);
-      recurse(x + half, y + half, half);
+/* ---------- Poisson-disk-ish edge sampling ---------- */
+function placePoints(W, H) {
+  if (state.shapeCount <= 0) return [];
+  const minDist = state.minDistance;
+  const cellSize = Math.max(2, minDist / Math.SQRT2);
+  const cols = Math.ceil(W / cellSize);
+  const rows = Math.ceil(H / cellSize);
+  const grid = new Array(cols * rows).fill(null);
+
+  const fits = (x, y) => {
+    const cx = Math.floor(x / cellSize), cy = Math.floor(y / cellSize);
+    const r = 2;
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+      const p = grid[ny * cols + nx];
+      if (p && Math.hypot(p.x - x, p.y - y) < minDist) return false;
+    }
+    return true;
+  };
+  const add = (x, y, sal) => {
+    const cx = Math.floor(x / cellSize), cy = Math.floor(y / cellSize);
+    const point = { x, y, sal };
+    grid[cy * cols + cx] = point;
+    return point;
+  };
+
+  const inset = state.crosshairInset + 4;
+  const useEdges = edgeCandidates && edgeCandidates.length > 0;
+  const points = [];
+  const maxTries = state.shapeCount * 60;
+
+  for (let i = 0; i < maxTries && points.length < state.shapeCount; i++) {
+    let x, y, sal;
+    if (useEdges && rand() * 100 < state.edgeBias) {
+      const cand = edgeCandidates[Math.floor(rand() * edgeCandidates.length)];
+      // jitter slightly so multiple shapes can sit along the same contour line
+      x = cand.x + (rand() - 0.5) * minDist * 0.6;
+      y = cand.y + (rand() - 0.5) * minDist * 0.6;
+      sal = cand.w;
     } else {
-      leaves.push({ x, y, size });
+      x = rrange(inset, W - inset);
+      y = rrange(inset, H - inset);
+      sal = saliencyAt(x / W, y / H);
     }
+    if (x < inset || x > W - inset || y < inset || y > H - inset) continue;
+    if (!fits(x, y)) continue;
+    points.push(add(x, y, sal));
   }
-  recurse(0, 0, rootSize);
-  return leaves;
+  return points;
 }
 
-/* ---------- Delaunay triangulation ---------- */
-function triangulateLeaves(leaves) {
-  if (typeof Delaunator === "undefined" || leaves.length < 3) return [];
-  const pts = new Float64Array(leaves.length * 2);
-  for (let i = 0; i < leaves.length; i++) {
-    pts[i*2]   = leaves[i].x + leaves[i].size / 2;
-    pts[i*2+1] = leaves[i].y + leaves[i].size / 2;
+/* ---------- Delaunay edges ---------- */
+function triangulatePoints(points) {
+  if (typeof Delaunator === "undefined" || points.length < 3) return [];
+  const flat = new Float64Array(points.length * 2);
+  for (let i = 0; i < points.length; i++) {
+    flat[i*2] = points[i].x; flat[i*2+1] = points[i].y;
   }
-  const d = new Delaunator(pts);
+  const d = new Delaunator(flat);
   const tris = d.triangles;
   const seen = new Set();
   const edges = [];
   for (let i = 0; i < tris.length; i += 3) {
     const a = tris[i], b = tris[i+1], c = tris[i+2];
-    const pairs = [[a,b],[b,c],[c,a]];
-    for (const [p, q] of pairs) {
+    for (const [p, q] of [[a,b],[b,c],[c,a]]) {
       const key = p < q ? `${p}-${q}` : `${q}-${p}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -468,12 +510,13 @@ function resizeCanvasToImage(img) {
 function bindSliders() {
   document.querySelectorAll("[data-slider]").forEach(row => {
     const key = row.dataset.slider;
-    const min = parseFloat(row.dataset.min);
-    const max = parseFloat(row.dataset.max);
     const step = parseFloat(row.dataset.step);
     const valEl = row.querySelector(".value");
     const input = row.querySelector("input[type=range]");
-    input.min = min; input.max = max; input.step = step; input.value = state[key];
+    input.min = row.dataset.min;
+    input.max = row.dataset.max;
+    input.step = step;
+    input.value = state[key];
     valEl.textContent = formatNum(state[key], step);
     input.addEventListener("input", () => {
       state[key] = step < 1 ? parseFloat(input.value) : parseInt(input.value, 10);
@@ -492,22 +535,13 @@ function setSlider(key, value) {
   row.querySelector(".value").textContent = formatNum(state[key], step);
 }
 
-function bindSegments() {
-  const themeSeg = document.getElementById("themeSeg");
-  themeSeg.addEventListener("click", e => {
+function bindSegment(segId, onChange) {
+  const seg = document.getElementById(segId);
+  seg.addEventListener("click", e => {
     const btn = e.target.closest("button"); if (!btn) return;
-    themeSeg.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    seg.querySelectorAll("button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    state.theme = btn.dataset.val;
-    document.body.classList.toggle("bright", state.theme === "bright");
-    render();
-  });
-  const connSeg = document.getElementById("connStyleSeg");
-  connSeg.addEventListener("click", e => {
-    const btn = e.target.closest("button"); if (!btn) return;
-    connSeg.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    state.connectionStyle = btn.dataset.val;
+    onChange(btn.dataset.val);
     render();
   });
 }
@@ -518,13 +552,9 @@ function bindShapeGrid() {
     const btn = e.target.closest("button"); if (!btn) return;
     const val = btn.dataset.val;
     if (state.shapes.has(val)) {
-      if (state.shapes.size > 1) {
-        state.shapes.delete(val);
-        btn.classList.remove("active");
-      }
+      if (state.shapes.size > 1) { state.shapes.delete(val); btn.classList.remove("active"); }
     } else {
-      state.shapes.add(val);
-      btn.classList.add("active");
+      state.shapes.add(val); btn.classList.add("active");
     }
     render();
   });
@@ -541,17 +571,20 @@ document.getElementById("randomizeBtn").addEventListener("click", () => {
   setSlider("seed", Math.floor(Math.random() * 9999) + 1);
   setSlider("threshold", Math.floor(Math.random() * 60) + 20);
   setSlider("pixelSize", Math.floor(Math.random() * 24) + 6);
-  setSlider("pixelZones", Math.floor(Math.random() * 4));
-  setSlider("gridStep", [4, 8, 8, 8, 16][Math.floor(Math.random() * 5)]);
-  setSlider("minLeafSize", Math.floor(Math.random() * 24) + 12);
-  setSlider("maxLeafSize", Math.floor(Math.random() * 200) + 80);
-  setSlider("energyThreshold", Math.floor(Math.random() * 30) + 8);
+  setSlider("pixelZones", Math.floor(Math.random() * 3));
+  setSlider("shapeCount", Math.floor(Math.random() * 500) + 150);
+  setSlider("edgeBias", Math.floor(Math.random() * 30) + 70);
+  setSlider("edgeThreshold", Math.floor(Math.random() * 20) + 4);
+  setSlider("minRadius", Math.floor(Math.random() * 6) + 3);
+  setSlider("maxRadius", Math.floor(Math.random() * 30) + 12);
+  setSlider("minDistance", Math.floor(Math.random() * 30) + 8);
+  setSlider("sizeVariation", Math.floor(Math.random() * 100));
   setSlider("labelDensity", Math.floor(Math.random() * 60) + 15);
-  setSlider("connectionDensity", Math.floor(Math.random() * 100));
-  setSlider("connectionMaxDistance", Math.floor(Math.random() * 200) + 60);
-  setSlider("focusRings", Math.floor(Math.random() * 6));
+  setSlider("connectionDensity", Math.floor(Math.random() * 70) + 30);
+  setSlider("connectionMaxDistance", Math.floor(Math.random() * 120) + 40);
+  setSlider("focusRings", Math.floor(Math.random() * 5));
   setSlider("focusSpacing", Math.floor(Math.random() * 100) + 40);
-  setSlider("chainCount", Math.floor(Math.random() * 18));
+  setSlider("chainCount", Math.floor(Math.random() * 14));
   setSlider("chainAngle", Math.floor(Math.random() * 360));
   setSlider("chainBaseRadius", Math.floor(Math.random() * 120) + 30);
   setSlider("chainSizeRatio", (Math.random() * 0.4 + 0.65).toFixed(2));
@@ -599,12 +632,13 @@ stage.addEventListener("drop", e => {
   const f = e.dataTransfer.files[0]; if (f && f.type.startsWith("image/")) loadFile(f);
 });
 
-/* ---------- Colors ---------- */
+/* ---------- Drawing helpers ---------- */
 function colors() {
   if (state.theme === "bright")
     return { bg: "#efeee9", fg: "#0a0a0a", mute: "rgba(0,0,0,.45)", soft: "rgba(0,0,0,.15)" };
   return { bg: "#0a0a0a", fg: "#e6e6e6", mute: "rgba(255,255,255,.45)", soft: "rgba(255,255,255,.15)" };
 }
+function withCtx(fn) { ctx.save(); fn(); ctx.restore(); }
 
 /* ---------- Image layer ---------- */
 function drawImageLayer(W, H) {
@@ -617,16 +651,16 @@ function drawImageLayer(W, H) {
   }
   const img = state.image;
   const t = state.threshold / 100;
-  ctx.save();
-  ctx.filter = `saturate(${1 - t * 0.7}) contrast(${1 + t * 0.6}) brightness(${state.theme === "bright" ? 1.05 : 0.92})`;
-  ctx.globalAlpha = state.overlayOpacity / 100;
-  ctx.drawImage(img, 0, 0, W, H);
-  ctx.restore();
-  ctx.save();
-  ctx.globalCompositeOperation = "multiply";
-  ctx.fillStyle = state.theme === "bright" ? "rgba(220,215,200,0.25)" : "rgba(20,18,16,0.35)";
-  ctx.fillRect(0, 0, W, H);
-  ctx.restore();
+  withCtx(() => {
+    ctx.filter = `saturate(${1 - t * 0.7}) contrast(${1 + t * 0.6}) brightness(${state.theme === "bright" ? 1.05 : 0.92})`;
+    ctx.globalAlpha = state.overlayOpacity / 100;
+    ctx.drawImage(img, 0, 0, W, H);
+  });
+  withCtx(() => {
+    ctx.globalCompositeOperation = "multiply";
+    ctx.fillStyle = state.theme === "bright" ? "rgba(220,215,200,0.25)" : "rgba(20,18,16,0.35)";
+    ctx.fillRect(0, 0, W, H);
+  });
   if (state.pixelZones > 0 && state.pixelSize > 1)
     buildPixelZones(W, H).forEach(z => drawPixelZone(img, W, H, z));
 }
@@ -640,7 +674,7 @@ function buildPixelZones(W, H) {
       const h = rrange(H * 0.12, H * 0.30);
       const x = rrange(W * 0.05, W - w - W * 0.05);
       const y = rrange(H * 0.05, H - h - H * 0.05);
-      const sal = rectEnergy(x, y, Math.min(w, h), W, H);
+      const sal = saliencyAt((x + w/2) / W, (y + h/2) / H);
       if (sal > bestSal) { bestSal = sal; best = { x, y, w, h }; }
     }
     if (best) out.push(best);
@@ -655,83 +689,80 @@ function drawPixelZone(img, W, H, z) {
   const tmp = document.createElement("canvas");
   tmp.width = cols; tmp.height = rows;
   const tctx = tmp.getContext("2d");
-  const sx = z.x / W * img.width;
-  const sy = z.y / H * img.height;
-  const sw = z.w / W * img.width;
-  const sh = z.h / H * img.height;
-  tctx.drawImage(img, sx, sy, sw, sh, 0, 0, cols, rows);
+  tctx.drawImage(img, z.x / W * img.width, z.y / H * img.height,
+                      z.w / W * img.width, z.h / H * img.height, 0, 0, cols, rows);
   const t = state.threshold / 100;
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  ctx.globalAlpha = state.overlayOpacity / 100;
-  ctx.filter = `saturate(${1 - t * 0.8}) contrast(${1 + t * 0.5})`;
-  ctx.drawImage(tmp, 0, 0, cols, rows, z.x, z.y, cols * px, rows * px);
-  ctx.restore();
-  ctx.save();
-  ctx.strokeStyle = colors().fg;
-  ctx.lineWidth = state.lineWeight;
-  ctx.setLineDash([4, 3]);
-  ctx.strokeRect(z.x + 0.5, z.y + 0.5, cols * px, rows * px);
-  ctx.restore();
-  ctx.save();
-  ctx.fillStyle = colors().fg;
-  ctx.font = "9px ui-monospace, monospace";
-  ctx.textBaseline = "top";
-  ctx.fillText(`PX ${px}  ${cols}×${rows}`, z.x + 4, z.y + 4);
-  ctx.restore();
+  withCtx(() => {
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = state.overlayOpacity / 100;
+    ctx.filter = `saturate(${1 - t * 0.8}) contrast(${1 + t * 0.5})`;
+    ctx.drawImage(tmp, 0, 0, cols, rows, z.x, z.y, cols * px, rows * px);
+  });
+  withCtx(() => {
+    ctx.strokeStyle = colors().fg;
+    ctx.lineWidth = state.lineWeight;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(z.x + 0.5, z.y + 0.5, cols * px, rows * px);
+  });
+  withCtx(() => {
+    ctx.fillStyle = colors().fg;
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.textBaseline = "top";
+    ctx.fillText(`PX ${px}  ${cols}×${rows}`, z.x + 4, z.y + 4);
+  });
 }
 
 /* ---------- Frame ---------- */
 function drawFrame(W, H) {
   const c = colors();
   const inset = state.crosshairInset;
-  ctx.save();
-  ctx.strokeStyle = c.fg;
-  ctx.lineWidth = state.lineWeight;
-  ctx.strokeRect(inset + 0.5, inset + 0.5, W - inset * 2, H - inset * 2);
-  const armLen = 18;
-  function corner(x, y, sx, sy) {
-    ctx.beginPath();
-    ctx.moveTo(x + sx * armLen, y); ctx.lineTo(x, y); ctx.lineTo(x, y + sy * armLen);
-    ctx.stroke();
-  }
-  corner(inset, inset, 1, 1);
-  corner(W - inset, inset, -1, 1);
-  corner(inset, H - inset, 1, -1);
-  corner(W - inset, H - inset, -1, -1);
-  const td = state.tickDensity;
-  ctx.strokeStyle = c.soft;
-  for (let x = inset + td; x < W - inset; x += td) {
-    ctx.beginPath(); ctx.moveTo(x + 0.5, inset); ctx.lineTo(x + 0.5, inset + 6); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + 0.5, H - inset); ctx.lineTo(x + 0.5, H - inset - 6); ctx.stroke();
-  }
-  for (let y = inset + td; y < H - inset; y += td) {
-    ctx.beginPath(); ctx.moveTo(inset, y + 0.5); ctx.lineTo(inset + 6, y + 0.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(W - inset, y + 0.5); ctx.lineTo(W - inset - 6, y + 0.5); ctx.stroke();
-  }
-  ctx.restore();
-  ctx.save();
-  ctx.fillStyle = c.fg;
-  ctx.font = "10px ui-monospace, monospace";
-  ctx.textBaseline = "alphabetic";
-  if (state.frameTop) {
-    ctx.fillText(state.frameTop, inset, inset - 8);
-    const meta = `§ ${W}×${H}`;
-    ctx.fillText(meta, W - inset - ctx.measureText(meta).width, inset - 8);
-  }
-  if (state.frameBot) {
-    ctx.fillText(state.frameBot, inset, H - inset + 16);
-    const meta = `SEED ${state.seed}`;
-    ctx.fillText(meta, W - inset - ctx.measureText(meta).width, H - inset + 16);
-  }
-  ctx.restore();
-  ctx.save();
-  ctx.strokeStyle = c.soft;
-  ctx.lineWidth = state.lineWeight * 0.7;
-  ctx.setLineDash([2, 4]);
-  ctx.beginPath(); ctx.moveTo(inset, H / 2 + 0.5); ctx.lineTo(W - inset, H / 2 + 0.5); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(W / 2 + 0.5, inset); ctx.lineTo(W / 2 + 0.5, H - inset); ctx.stroke();
-  ctx.restore();
+  withCtx(() => {
+    ctx.strokeStyle = c.fg;
+    ctx.lineWidth = state.lineWeight;
+    ctx.strokeRect(inset + 0.5, inset + 0.5, W - inset * 2, H - inset * 2);
+    const armLen = 18;
+    const corner = (x, y, sx, sy) => {
+      ctx.beginPath();
+      ctx.moveTo(x + sx * armLen, y); ctx.lineTo(x, y); ctx.lineTo(x, y + sy * armLen);
+      ctx.stroke();
+    };
+    corner(inset, inset, 1, 1);
+    corner(W - inset, inset, -1, 1);
+    corner(inset, H - inset, 1, -1);
+    corner(W - inset, H - inset, -1, -1);
+    ctx.strokeStyle = c.soft;
+    const td = state.tickDensity;
+    for (let x = inset + td; x < W - inset; x += td) {
+      ctx.beginPath(); ctx.moveTo(x + 0.5, inset); ctx.lineTo(x + 0.5, inset + 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 0.5, H - inset); ctx.lineTo(x + 0.5, H - inset - 6); ctx.stroke();
+    }
+    for (let y = inset + td; y < H - inset; y += td) {
+      ctx.beginPath(); ctx.moveTo(inset, y + 0.5); ctx.lineTo(inset + 6, y + 0.5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(W - inset, y + 0.5); ctx.lineTo(W - inset - 6, y + 0.5); ctx.stroke();
+    }
+  });
+  withCtx(() => {
+    ctx.fillStyle = c.fg;
+    ctx.font = "10px ui-monospace, monospace";
+    ctx.textBaseline = "alphabetic";
+    if (state.frameTop) {
+      ctx.fillText(state.frameTop, inset, inset - 8);
+      const meta = `§ ${W}×${H}`;
+      ctx.fillText(meta, W - inset - ctx.measureText(meta).width, inset - 8);
+    }
+    if (state.frameBot) {
+      ctx.fillText(state.frameBot, inset, H - inset + 16);
+      const meta = `SEED ${state.seed}`;
+      ctx.fillText(meta, W - inset - ctx.measureText(meta).width, H - inset + 16);
+    }
+  });
+  withCtx(() => {
+    ctx.strokeStyle = c.soft;
+    ctx.lineWidth = state.lineWeight * 0.7;
+    ctx.setLineDash([2, 4]);
+    ctx.beginPath(); ctx.moveTo(inset, H / 2 + 0.5); ctx.lineTo(W - inset, H / 2 + 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W / 2 + 0.5, inset); ctx.lineTo(W / 2 + 0.5, H - inset); ctx.stroke();
+  });
 }
 
 /* ---------- Focus rings ---------- */
@@ -751,27 +782,26 @@ function drawFocusRings(W, H) {
   if (state.focusRings <= 0) return;
   const c = colors();
   const fp = focalPoint(W, H);
-  ctx.save();
-  ctx.strokeStyle = c.fg;
-  ctx.lineWidth = Math.max(0.4, state.stroke * 0.6);
-  for (let i = 0; i < state.focusRings; i++) {
-    const r = state.focusSpacing * (i + 1);
-    ctx.setLineDash(i === state.focusRings - 1 ? [] : [3, 4]);
-    ctx.beginPath(); ctx.arc(fp.x, fp.y, r, 0, Math.PI * 2); ctx.stroke();
-  }
-  ctx.setLineDash([]);
-  ctx.lineWidth = state.stroke;
-  const arm = 12;
-  ctx.beginPath();
-  ctx.moveTo(fp.x - arm, fp.y); ctx.lineTo(fp.x + arm, fp.y);
-  ctx.moveTo(fp.x, fp.y - arm); ctx.lineTo(fp.x, fp.y + arm);
-  ctx.stroke();
-  ctx.fillStyle = c.fg;
-  ctx.beginPath(); ctx.arc(fp.x, fp.y, Math.max(1, state.stroke), 0, Math.PI * 2); ctx.fill();
-  ctx.font = "9px ui-monospace, monospace";
-  ctx.textBaseline = "top";
-  ctx.fillText(`FOCAL  ${Math.round(fp.x)},${Math.round(fp.y)}`, fp.x + arm + 4, fp.y + 4);
-  ctx.restore();
+  withCtx(() => {
+    ctx.strokeStyle = c.fg;
+    ctx.lineWidth = Math.max(0.4, state.stroke * 0.6);
+    for (let i = 0; i < state.focusRings; i++) {
+      ctx.setLineDash(i === state.focusRings - 1 ? [] : [3, 4]);
+      ctx.beginPath(); ctx.arc(fp.x, fp.y, state.focusSpacing * (i + 1), 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.lineWidth = state.stroke;
+    const arm = 12;
+    ctx.beginPath();
+    ctx.moveTo(fp.x - arm, fp.y); ctx.lineTo(fp.x + arm, fp.y);
+    ctx.moveTo(fp.x, fp.y - arm); ctx.lineTo(fp.x, fp.y + arm);
+    ctx.stroke();
+    ctx.fillStyle = c.fg;
+    ctx.beginPath(); ctx.arc(fp.x, fp.y, Math.max(1, state.stroke), 0, Math.PI * 2); ctx.fill();
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.textBaseline = "top";
+    ctx.fillText(`FOCAL  ${Math.round(fp.x)},${Math.round(fp.y)}`, fp.x + arm + 4, fp.y + 4);
+  });
 }
 
 /* ---------- Circle chain ---------- */
@@ -783,147 +813,154 @@ function drawChain(W, H) {
   for (let i = 0; i < 40; i++) {
     const cx = rrange(inset, W - inset);
     const cy = rrange(inset, H - inset);
-    const s = rectEnergy(cx - 20, cy - 20, 40, W, H);
+    const s = saliencyAt(cx / W, cy / H);
     if (s > bestSal) { bestSal = s; ox = cx; oy = cy; }
   }
   const angle = (state.chainAngle * Math.PI) / 180;
   let r = state.chainBaseRadius;
   let x = ox, y = oy;
-  ctx.save();
-  ctx.strokeStyle = c.fg;
-  ctx.lineWidth = state.stroke;
-  ctx.font = "9px ui-monospace, monospace";
-  ctx.fillStyle = c.fg;
-  ctx.textBaseline = "middle";
-  for (let i = 0; i < state.chainCount; i++) {
-    ctx.setLineDash(i % 3 === 1 ? [3, 3] : []);
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]);
-    const tk = Math.min(r * 0.9, r + 4);
-    ctx.save();
-    ctx.strokeStyle = c.mute;
-    ctx.beginPath();
-    ctx.moveTo(x - tk, y); ctx.lineTo(x + tk, y);
-    ctx.moveTo(x, y - tk); ctx.lineTo(x, y + tk);
-    ctx.stroke();
-    ctx.restore();
-    ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, state.stroke * 0.8), 0, Math.PI * 2); ctx.fill();
-    ctx.fillText(`${i + 1} → ${Math.round(r * 12)} − ${Math.round(r * 8)}`, x + r + 6, y);
-    const next = r * state.chainSizeRatio;
-    const step = r + next + 4;
-    x += Math.cos(angle) * step;
-    y += Math.sin(angle) * step;
-    r = next;
-    if (r < 2 || x < -100 || x > W + 100 || y < -100 || y > H + 100) break;
-  }
-  ctx.restore();
+  withCtx(() => {
+    ctx.strokeStyle = c.fg;
+    ctx.lineWidth = state.stroke;
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.fillStyle = c.fg;
+    ctx.textBaseline = "middle";
+    for (let i = 0; i < state.chainCount; i++) {
+      ctx.setLineDash(i % 3 === 1 ? [3, 3] : []);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      const tk = Math.min(r * 0.9, r + 4);
+      withCtx(() => {
+        ctx.strokeStyle = c.mute;
+        ctx.beginPath();
+        ctx.moveTo(x - tk, y); ctx.lineTo(x + tk, y);
+        ctx.moveTo(x, y - tk); ctx.lineTo(x, y + tk);
+        ctx.stroke();
+      });
+      ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, state.stroke * 0.8), 0, Math.PI * 2); ctx.fill();
+      ctx.fillText(`${i + 1} → ${Math.round(r * 12)} − ${Math.round(r * 8)}`, x + r + 6, y);
+      const next = r * state.chainSizeRatio;
+      const step = r + next + 4;
+      x += Math.cos(angle) * step;
+      y += Math.sin(angle) * step;
+      r = next;
+      if (r < 2 || x < -100 || x > W + 100 || y < -100 || y > H + 100) break;
+    }
+  });
 }
 
-/* ---------- Quadtree shapes + connections ---------- */
-function drawConnections(edges, leaves) {
+/* ---------- Connections (Delaunay) ---------- */
+function drawConnections(edges, points) {
   if (edges.length === 0) return;
   const c = colors();
   const maxLen = state.connectionMaxDistance;
   const stylePool = state.connectionStyle === "mixed" ? ["solid", "dashed"] : [state.connectionStyle];
-  ctx.save();
-  ctx.strokeStyle = c.mute;
-  ctx.lineWidth = Math.max(0.3, state.stroke * 0.55);
-  for (let i = 0; i < edges.length; i++) {
-    if (rand() * 100 > state.connectionDensity) continue;
-    const [a, b] = edges[i];
-    const la = leaves[a], lb = leaves[b];
-    const x1 = la.x + la.size / 2, y1 = la.y + la.size / 2;
-    const x2 = lb.x + lb.size / 2, y2 = lb.y + lb.size / 2;
-    if (Math.hypot(x2 - x1, y2 - y1) > maxLen) continue;
-    const style = stylePool[Math.floor(rand() * stylePool.length)];
-    if (style === "dashed") ctx.setLineDash([4, 3]); else ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-  }
-  ctx.restore();
+  withCtx(() => {
+    ctx.strokeStyle = c.mute;
+    ctx.lineWidth = Math.max(0.3, state.stroke * 0.55);
+    for (let i = 0; i < edges.length; i++) {
+      if (rand() * 100 > state.connectionDensity) continue;
+      const [a, b] = edges[i];
+      const pa = points[a], pb = points[b];
+      const dx = pb.x - pa.x, dy = pb.y - pa.y;
+      const d = Math.hypot(dx, dy);
+      if (d > maxLen || d < 1) continue;
+      // start/end at shape boundary so line doesn't cross the marker
+      const ux = dx / d, uy = dy / d;
+      const offA = pa.r + 2, offB = pb.r + 2;
+      const style = stylePool[Math.floor(rand() * stylePool.length)];
+      ctx.setLineDash(style === "dashed" ? [4, 3] : []);
+      ctx.beginPath();
+      ctx.moveTo(pa.x + ux * offA, pa.y + uy * offA);
+      ctx.lineTo(pb.x - ux * offB, pb.y - uy * offB);
+      ctx.stroke();
+    }
+  });
 }
 
-function drawLeafShape(leaf, kind, c) {
-  const cx = leaf.x + leaf.size / 2;
-  const cy = leaf.y + leaf.size / 2;
-  const pad = 1;
-  const r = (leaf.size - pad * 2) / 2;
-  ctx.save();
-  ctx.strokeStyle = c.fg;
-  ctx.lineWidth = state.stroke;
-  const dashed = kind.endsWith("-dashed");
-  if (dashed) {
-    const d = Math.max(2, leaf.size * 0.13);
-    ctx.setLineDash([d, d * 0.7]);
-  } else {
-    ctx.setLineDash([]);
-  }
-  const base = kind.replace("-dashed", "");
+/* ---------- Shapes ---------- */
+function shapePath(base, r) {
+  ctx.beginPath();
   if (base === "square") {
-    ctx.strokeRect(leaf.x + pad + 0.5, leaf.y + pad + 0.5, leaf.size - pad * 2, leaf.size - pad * 2);
+    ctx.rect(-r, -r, r * 2, r * 2);
   } else if (base === "circle") {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
   } else if (base === "triangle") {
     const a0 = -Math.PI / 2;
-    ctx.beginPath();
-    ctx.moveTo(cx + r * Math.cos(a0), cy + r * Math.sin(a0));
-    ctx.lineTo(cx + r * Math.cos(a0 + 2 * Math.PI / 3), cy + r * Math.sin(a0 + 2 * Math.PI / 3));
-    ctx.lineTo(cx + r * Math.cos(a0 + 4 * Math.PI / 3), cy + r * Math.sin(a0 + 4 * Math.PI / 3));
+    ctx.moveTo(r * Math.cos(a0), r * Math.sin(a0));
+    ctx.lineTo(r * Math.cos(a0 + 2 * Math.PI / 3), r * Math.sin(a0 + 2 * Math.PI / 3));
+    ctx.lineTo(r * Math.cos(a0 + 4 * Math.PI / 3), r * Math.sin(a0 + 4 * Math.PI / 3));
     ctx.closePath();
-    ctx.stroke();
   }
-  ctx.restore();
 }
 
-function drawLeafDot(leaf, c) {
-  ctx.save();
-  ctx.fillStyle = c.fg;
-  ctx.beginPath();
-  ctx.arc(leaf.x + leaf.size / 2, leaf.y + leaf.size / 2,
-          Math.max(0.5, state.stroke * 0.6), 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawLeafLabel(leaf, c) {
-  if (leaf.size < 26) return;
-  if (rand() * 100 > state.labelDensity) return;
-  const cx = leaf.x + leaf.size / 2;
-  const cy = leaf.y + leaf.size / 2;
-  ctx.save();
-  ctx.fillStyle = c.fg;
-  const fs = Math.min(10, Math.max(8, leaf.size * 0.09));
-  ctx.font = `${fs}px ui-monospace, monospace`;
-  ctx.textBaseline = "top";
-  ctx.fillText(`${Math.round(cx)},${Math.round(cy)}`, leaf.x + 3, leaf.y + 3);
-  ctx.restore();
-}
-
-function drawQuadtree(leaves) {
-  const c = colors();
+function assignShapeKinds(points) {
   const enabled = Array.from(state.shapes);
-  // Use a per-leaf deterministic shape choice based on position + seed
-  for (let i = 0; i < leaves.length; i++) {
-    const l = leaves[i];
-    // deterministic kind picker (so resizing one slider doesn't reshuffle all)
-    const h = ((l.x * 73856093) ^ (l.y * 19349663) ^ (state.seed * 83492791)) >>> 0;
-    const kind = enabled[h % enabled.length];
-    drawLeafShape(l, kind, c);
-    drawLeafDot(l, c);
+  for (const p of points) {
+    const h = ((Math.floor(p.x) * 73856093) ^ (Math.floor(p.y) * 19349663) ^ (state.seed * 83492791)) >>> 0;
+    p.kind = enabled[h % enabled.length];
+    // size: base random, then bias smaller on stronger edges if sizeVariation > 0
+    const baseR = rrange(state.minRadius, Math.max(state.minRadius + 1, state.maxRadius));
+    const sv = state.sizeVariation / 100;
+    const sizeFactor = 1 - sv * Math.min(1, p.sal * 1.5);
+    p.r = Math.max(state.minRadius, baseR * Math.max(0.35, sizeFactor));
+    p.angle = ((h >>> 8) & 1023) / 1023 * Math.PI * 2;
   }
-  // labels: use ordered rand consumption (labelDensity)
-  for (let i = 0; i < leaves.length; i++) drawLeafLabel(leaves[i], c);
+}
+
+function drawMarkers(points) {
+  const c = colors();
+  withCtx(() => {
+    ctx.lineWidth = state.stroke;
+    for (const p of points) {
+      // crosshair
+      const tk = Math.min(p.r * 1.3, p.r + 6);
+      withCtx(() => {
+        ctx.strokeStyle = c.mute;
+        ctx.lineWidth = Math.max(0.4, state.stroke * 0.6);
+        ctx.beginPath();
+        ctx.moveTo(p.x - tk, p.y); ctx.lineTo(p.x + tk, p.y);
+        ctx.moveTo(p.x, p.y - tk); ctx.lineTo(p.x, p.y + tk);
+        ctx.stroke();
+      });
+      // shape outline
+      withCtx(() => {
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.strokeStyle = c.fg;
+        const dashed = p.kind.endsWith("-dashed");
+        if (dashed) {
+          const d = Math.max(2, p.r * 0.32);
+          ctx.setLineDash([d, d * 0.7]);
+        }
+        shapePath(p.kind.replace("-dashed", ""), p.r);
+        ctx.stroke();
+      });
+      // dot
+      withCtx(() => {
+        ctx.fillStyle = c.fg;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(0.5, state.stroke * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  });
+  // labels (separate pass so they read above shapes)
+  withCtx(() => {
+    ctx.fillStyle = c.fg;
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.textBaseline = "middle";
+    for (const p of points) {
+      if (rand() * 100 > state.labelDensity) continue;
+      ctx.fillText(`${Math.round(p.x)},${Math.round(p.y)}`, p.x + p.r + 4, p.y);
+    }
+  });
 }
 
 /* ---------- Main ---------- */
 function render() {
   const W = canvas.width, H = canvas.height;
-  const c = colors();
-  ctx.fillStyle = c.bg;
+  ctx.fillStyle = colors().bg;
   ctx.fillRect(0, 0, W, H);
 
   resetRand(0);
@@ -936,19 +973,26 @@ function render() {
   resetRand(2);
   drawChain(W, H);
 
-  // Quadtree pipeline
-  const leaves = buildQuadtree(W, H);
-  const edges = triangulateLeaves(leaves);
-
+  // Edge-following pipeline
+  rebuildEdgeCandidates(W, H);
   resetRand(3);
-  drawConnections(edges, leaves);
+  const points = placePoints(W, H);
+  assignShapeKinds(points);
+  const edges = triangulatePoints(points);
 
   resetRand(4);
-  drawQuadtree(leaves);
+  drawConnections(edges, points);
+
+  resetRand(5);
+  drawMarkers(points);
 }
 
 bindSliders();
-bindSegments();
+bindSegment("themeSeg", v => {
+  state.theme = v;
+  document.body.classList.toggle("bright", v === "bright");
+});
+bindSegment("connStyleSeg", v => { state.connectionStyle = v; });
 bindShapeGrid();
 render();
 </script>
