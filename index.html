@@ -904,7 +904,6 @@ function assignShapeKinds(points) {
     const sv = state.sizeVariation / 100;
     const sizeFactor = 1 - sv * Math.min(1, p.sal * 1.5);
     p.r = Math.max(state.minRadius, baseR * Math.max(0.35, sizeFactor));
-    p.angle = ((h >>> 8) & 1023) / 1023 * Math.PI * 2;
   }
 }
 
@@ -923,10 +922,9 @@ function drawMarkers(points) {
         ctx.moveTo(p.x, p.y - tk); ctx.lineTo(p.x, p.y + tk);
         ctx.stroke();
       });
-      // shape outline
+      // shape outline (axis-aligned — no rotation)
       withCtx(() => {
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
         ctx.strokeStyle = c.fg;
         const dashed = p.kind.endsWith("-dashed");
         if (dashed) {
